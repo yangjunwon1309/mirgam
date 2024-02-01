@@ -1,0 +1,156 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>마이 페이지</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 20px;
+    }
+    .container {
+        max-width: 600px;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    h2 {
+        text-align: center;
+    }
+    form {
+        display: flex;
+        flex-direction: column;
+    }
+    label {
+        margin-top: 10px;
+    }
+    input, select {
+        padding: 8px;
+        margin-top: 5px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+    }
+    button {
+        padding: 10px;
+        margin-top: 20px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    button:hover {
+        background-color: #45a049;
+    }
+    .navbar {
+    max-width: 800px;
+    margin: auto;
+    justify-content: center; /* 가운데 정렬 */
+    align-items: center;
+    background-color: #4CAF50; /* 메뉴바 배경색 */
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+}
+
+.navbar a {
+    float: left;
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+
+.navbar a:hover {
+    background-color: #45a049; /* 마우스 오버시 배경색 변경 */
+}
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+    th {
+        background-color: #4CAF50;
+        color: white;
+    }
+    .inner-div {
+            background-color: #f5f5dc; /* 그레이 톤의 베이지 색 */
+            border-radius: 10px; /* 둥근 모서리 */
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* 그림자 효과 */
+            margin: 20px 0; /* 상하 여백 */
+}
+</style>
+</head>
+<body>
+    <div class="navbar">
+        <a href="/contact">미르감</a>
+        <a href="/order_view">주문 정보 확인</a>
+        <a href="/order">주문 입력하기</a>
+        <a href="/customer">고객 확인 및 수정</a>
+        <a href="/mypage">농장 정보 변경 및 등록</a>
+    </div>
+    <br>
+
+    <div class="container">
+        {% with messages = get_flashed_messages() %}
+    {% if messages %}
+        {% for message in messages %}
+        <li class = "flash">{{message}}</li>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+        <h2>마이 페이지</h2>
+        <div class = "inner-div">
+        <br>
+        <form action="/mypage" method="POST">
+            <label for="add_item">상품 명:</label>
+            <input type="text" id="add_item" name="add_item" required>
+
+            <label for="add_price">상품 가격: </label>
+            <input type="text" id="add_price" name="add_price" required>
+
+            <button type="submit">상품 추가</button>
+        </form>
+            <form action="/upload" method="post" enctype="multipart/form-data">
+                <input type="file" name="file">
+                <input type="submit" value="파일 올리기">
+            </form>
+            </div>
+        <table id="items_table">
+            <thead>
+                <tr>
+                    <th>상품이름</th>
+                    <th>가격</th>
+                    <th>삭제</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item['item'] }}</td>
+                <td>{{ item['price'] }}</td>
+                <td>
+                    <form action="/mypage" method="POST">
+                        <input type="hidden" id="delete_item" name="delete_item" value = "{{ item['item'] }}">
+                        <button type="delete">삭제</button>
+                </form>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,9 @@
+build/
+crud/
+app.spec
+csv_engine.py
+dist.zip
+scrap.py
+data/
+migrations/
+env.txt

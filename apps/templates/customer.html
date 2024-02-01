@@ -1,0 +1,265 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>주문 관리</title>
+<style>
+    body {
+        font-family: 'Helvetica Neue', Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 20px;
+    }
+    .container {
+        max-width: 800px;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+    th {
+        background-color: #4CAF50;
+        color: white;
+    }
+    label, select, input, button {
+        display: block;
+        width: 100%;
+        margin-top: 10px;
+    }
+    button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        width: 100%;
+    }
+    button:hover {
+        background-color: #45a049;
+    }
+
+    .navbar {
+    max-width: 800px;
+    margin: auto;
+    justify-content: center; /* 가운데 정렬 */
+    align-items: center;
+    background-color: #4CAF50; /* 메뉴바 배경색 */
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+}
+
+.navbar a {
+    float: left;
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+
+.navbar a:hover {
+    background-color: #45a049; /* 마우스 오버시 배경색 변경 */
+}
+
+/* 컨테이너 및 기타 스타일 */
+.container {
+    padding: 20px;
+}
+.inner-div {
+            background-color: #f5f5dc; /* 그레이 톤의 베이지 색 */
+            border-radius: 10px; /* 둥근 모서리 */
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* 그림자 효과 */
+            margin: 20px 0; /* 상하 여백 */
+}
+
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgb(0,0,0); /* Fallback color */
+  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+/* Modal Content/Box */
+.modal-content {
+  background-color: #fefefe;
+  margin: 15% auto; /* 15% from the top and centered */
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%; /* Could be more or less, depending on screen size */
+}
+
+/* The Close Button */
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+</style>
+
+<script>
+
+
+window.onload = function() {
+    // 사용자가 이름을 입력하면 호출되는 함수
+    document.getElementById('customer_name_input').oninput = function() {
+        var input = this.value.toLowerCase();
+        var table = document.getElementById('customers_table');
+        var tr = table.getElementsByTagName('tr');
+
+        // 모든 테이블 행을 숨김
+        for (var i = 1; i < tr.length; i++) {
+            tr[i].style.display = 'none';
+        }
+
+        // 입력된 이름과 일치하는 행만 표시
+        for (var i = 1; i < tr.length; i++) {
+            var td = tr[i].getElementsByTagName('td')[0];
+            if (td) {
+                var name = td.textContent || td.innerText;
+                if (name.toLowerCase().indexOf(input) > -1) {
+                    tr[i].style.display = '';
+                }
+            }
+        }
+    };
+};
+
+function selectCustomer(name, phone, address) {
+    document.getElementById('selected_name').value = name;
+    document.getElementById('selected_phone').value = phone;
+    document.getElementById('selected_address').value = address;
+    // 선택된 값을 표시하는 div 업데이트
+    document.getElementById('display_name').textContent = name;
+    document.getElementById('display_phone').textContent = phone;
+    document.getElementById('display_address').textContent = address;
+
+}
+var modal = document.getElementById("myModal");
+
+// Get the button that opens the modal
+var btn = document.getElementById("btn");
+
+// Get the <span> element that closes the modal
+var span = document.getElementsByClassName("close")[0];
+
+// When the user clicks the button, open the modal
+btn.onclick = function() {
+  modal.style.display = "block";
+}
+
+// When the user clicks on <span> (x), close the modal
+span.onclick = function() {
+  modal.style.display = "none";
+}
+
+// When the user clicks anywhere outside of the modal, close it
+window.onclick = function(event) {
+  if (event.target == modal) {
+    modal.style.display = "none";
+  }
+}
+
+</script>
+
+</head>
+<body>
+    <div class="navbar">
+        <a href="/contact">미르감</a>
+        <a href="/order_view">주문 정보 확인</a>
+        <a href="/order">주문 입력하기</a>
+        <a href="/customer">고객 확인 및 수정</a>
+        <a href="/mypage">농장 정보 변경 및 등록</a>
+    </div>
+    <br>
+    <div class="container">
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+        {% for message in messages %}
+        <li class = "flash">{{message}}</li>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+        <label for="customer_name_input">고객 이름 검색란</label>
+        <input type="text" id="customer_name_input" name="customer_name" autocomplete="off" style = "height: 30px;">
+    <div class = "inner-div">
+    </form>
+        <form id="customer_form" method="POST" >
+        <label >새 고객 정보 입력:</label>
+        <label >이름:</label>
+        <input type="text" id="new_name" name="new_name" placeholder="홍길동" style = "height: 35px;" required>
+        <label >핸드폰 번호:</label>
+        <input type="tel" id="new_phone" name="new_phone" pattern="[0-9]{3}-[0-9]{4}-[0-9]{4}" placeholder="ex) 010-1234-5678" style = "height: 35px;" required>
+        <label >주소:</label>
+        <input type="text" id="new_address" name="new_address" placeholder="ex) 한국광역시 한국대로 12-34" style = "height: 35px;" required>
+        <button type="submit" style ="background-color: green;">제출</button>
+    </form>
+        </div>
+        <table id="customers_table">
+            <thead>
+                <tr>
+                    <th>이름</th>
+                    <th>전화번호</th>
+                    <th>주소</th>
+                    <th>   </th>
+                    <!-- <th>   </th> -->
+                </tr>
+            </thead>
+            <tbody>
+            {% for customer in customers %}
+            <tr>
+                <td>{{ customer['name'] }}</td>
+                <td>{{ customer['ph'] }}</td>
+                <td>{{ customer['address'] }}</td>
+                <!--<td><button type="edit" id="btn">수정</button></td> -->
+
+                <td>
+                <div style="display: flex; flex-direction:row; align-items: center; padding: 3px; width: 100%;">
+                <form action="/customer" method="POST">
+                        <input type="hidden" id="selected_name" name="selected_name" value = "{{ customer['name'] }}">
+                        <input type="hidden" id="selected_ph" name="selected_ph" value = "{{ customer['ph'] }}">
+                        <button type="delete">삭제</button>
+                </form>
+                </div>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <div id="myModal" class="modal">
+
+          <!-- Modal content -->
+
+
+        </div>
+    </div>
+</body>
+</html>

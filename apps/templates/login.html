@@ -1,0 +1,88 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title> 미르감 로그인</title>
+<style>
+    body {
+        font-family: 'Helvetica Neue', Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+    }
+    .login-container {
+        width: 300px;
+        padding: 20px;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .form-field {
+        margin-bottom: 20px;
+    }
+    .form-field label {
+        display: block;
+        margin-bottom: 10px;
+        color: #333;
+        font-size: 14px;
+    }
+    .form-field input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 16px;
+    }
+    .login-button {
+        width: 100%;
+        padding: 10px;
+        border: none;
+        border-radius: 4px;
+        background-color: #4CAF50;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    .login-button:hover {
+        background-color: #45a049;
+    }
+    input[type="text"],
+    input[type="password"] {
+        width: 90%; /* 폭 조정 */
+        margin: left; /* 가운데 정렬 */
+        display: block; /* 블록 레벨 요소로 변경 */
+    }
+</style>
+</head>
+<body>
+
+    <div class="login-container">
+        <form action="/login" method="POST" novalidate="novalidate">
+            <h2> 미르감 </h2>
+            <div class="form-field">
+                <label for="farm-name">농장명</label>
+                <input type="text" id="farm-name" name="farm-name" required>
+            </div>
+            <div class="form-field">
+                <label for="password">비밀번호</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit" class="login-button">로그인</button>
+        </form>
+        {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <ul>
+        {% for message in messages %}
+        <li class = "flash">{{message}}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
+    </div>
+</body>
+</html>
