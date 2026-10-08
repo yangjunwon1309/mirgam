@@ -42,8 +42,8 @@ def decrypt_secret(value):
 def normalize_base_url(value):
     parts = urlsplit((value or '').strip())
     if (parts.scheme != 'https' or parts.hostname != 'api.sms-gate.app' or parts.username or parts.password or
-            parts.query or parts.fragment or parts.path not in ('', '/', '/3rdparty/v1')):
-        raise SmsGateError('Cloud Server 주소는 https://api.sms-gate.app 이어야 합니다.')
+            parts.query or parts.fragment or parts.path not in ('', '/', '/mobile/v1', '/3rdparty/v1')):
+        raise SmsGateError('Cloud Server 주소는 https://api.sms-gate.app 또는 https://api.sms-gate.app/mobile/v1 이어야 합니다.')
     return SMS_GATE_DEFAULT_URL
 
 
