@@ -4,3 +4,5 @@ alembic==1.12.1
 openpyxl==3.1.2
 waitress==3.0.2
 sqlalchemy-sqlitecloud==0.1.2
+cryptography==41.0.7
+requests==2.31.0

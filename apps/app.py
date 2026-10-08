@@ -139,6 +139,59 @@ def create_app(api_url=None, testing=False, transport=None):
     def contact():
         return render_template('contact.html')
 
+    @app.post('/sms-connection')
+    def save_sms_connection():
+        if request.form.get('confirm_privacy') != 'yes':
+            flash('개인 SMS가 중앙 서버에 전달될 수 있다는 안내를 확인해 주세요.')
+            return redirect(url_for('mypage'))
+        payload = {key: request.form.get(key, '').strip() for key in
+                   ('base_url', 'username', 'password', 'device_id', 'phone_number', 'signing_key', 'auto_ack_text')}
+        payload['sim_number'] = request.form.get('sim_number', '1')
+        payload['auto_ack_enabled'] = request.form.get('auto_ack_enabled') == 'yes'
+        result = central('PUT', '/sms-gate/connection', json=payload)
+        flash('SMS Gateway 기기를 연결했습니다. 테스트 문자를 보낸 뒤 문자 주문 화면에서 수신을 확인하세요.')
+        return redirect(url_for('mypage'))
+
+    @app.post('/sms-connection/disconnect')
+    def disconnect_sms_connection():
+        central('DELETE', '/sms-gate/connection')
+        flash('SMS Gateway 연결을 해제했습니다.')
+        return redirect(url_for('mypage'))
+
+    @app.get('/sms-orders')
+    def sms_orders():
+        state_filter = request.args.get('state', 'review')
+        if state_filter not in ('review', 'confirmed', 'ignored', 'all'):
+            state_filter = 'review'
+        result = central('GET', '/sms/inbound', params={'state': state_filter, 'page': 1, 'page_size': 50})
+        products = central('GET', '/products')['data']
+        outbox = central('GET', '/sms/outbox', params={'page': 1, 'page_size': 20})['data']
+        return render_template('sms_orders.html', messages=result['data'], products=products,
+                               selected_state=state_filter, total=result['total'], outbox=outbox)
+
+    @app.post('/sms-orders/<int:identifier>/confirm')
+    def confirm_sms_order(identifier):
+        values = {'product_id': request.form.get('product_id'), 'quantity': request.form.get('quantity', '').strip(),
+                  'date': request.form.get('date', '').strip()}
+        customer_id = request.form.get('customer_id', '').strip()
+        if customer_id:
+            values['customer_id'] = int(submitted_id('customer_id'))
+        else:
+            values['customer'] = {key: request.form.get(key, '').strip()
+                                  for key in ('name', 'ph', 'address')}
+        if not re.fullmatch(r'[1-9][0-9]{0,18}', values['product_id']):
+            raise APIClientError('주문 상품을 선택해 주세요.', 422)
+        values['product_id'] = int(values['product_id'])
+        central('POST', f'/sms/inbound/{identifier}/confirm', json=values)
+        flash('문자 주문을 확정하고 기존 주문 내역에 저장했습니다.')
+        return redirect(url_for('sms_orders'))
+
+    @app.post('/sms-orders/<int:identifier>/ignore')
+    def ignore_sms_order(identifier):
+        central('POST', f'/sms/inbound/{identifier}/ignore', json={})
+        flash('선택한 문자를 주문 검토 목록에서 제외했습니다.')
+        return redirect(url_for('sms_orders'))
+
     def render_order_form(drafts=None, request_id=None, cached=False, committed=False, uncertain=False):
         login_state = state()
         if not cached:
@@ -301,7 +354,8 @@ def create_app(api_url=None, testing=False, transport=None):
             else:
                 central('POST', '/products', json={'item': request.form.get('add_item'), 'price': request.form.get('add_price', '')})
             return redirect(url_for('mypage'))
-        return render_template('mypage.html', items=central('GET', '/products')['data'])
+        connection = central('GET', '/sms-gate/connection')['data']
+        return render_template('mypage.html', items=central('GET', '/products')['data'], sms_connection=connection)
 
     @app.post('/upload')
     def upload():

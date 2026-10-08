@@ -9,7 +9,8 @@ from alembic.config import Config
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session
 
-SCHEMA_VERSION = '0001'
+SCHEMA_VERSION = '0002'
+SUPPORTED_SCHEMA_VERSIONS = {'0001', '0002'}
 
 
 class Database:
@@ -44,8 +45,9 @@ class Database:
             command.upgrade(cfg, 'head')
         with self.engine.connect() as connection:
             version = connection.exec_driver_sql('SELECT version_num FROM alembic_version').scalar()
-            if version != SCHEMA_VERSION:
+            if version not in SUPPORTED_SCHEMA_VERSIONS:
                 raise RuntimeError('Unsupported database schema version')
+            self.schema_version = version
             if not self.remote:
                 connection.exec_driver_sql('PRAGMA journal_mode=WAL')
 

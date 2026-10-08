@@ -105,3 +105,72 @@ class MigrationRun(Base):
     manifest_hash = Column(String(64), nullable=False)
     report_json = Column(Text, nullable=False)
     created_at = Column(Text, nullable=False, default=now)
+
+
+class SmsGateConnection(Base):
+    __tablename__ = 'sms_gate_connections'
+    id = Column(Integer, primary_key=True)
+    account_id = Column(Integer, ForeignKey('accounts.id'), nullable=False, unique=True)
+    base_url = Column(Text, nullable=False)
+    username = Column(Text, nullable=False)
+    password_ciphertext = Column(Text, nullable=False)
+    signing_key_ciphertext = Column(Text, nullable=False)
+    device_id = Column(String(128), nullable=False, unique=True)
+    phone_number = Column(Text, nullable=False)
+    sim_number = Column(Integer, nullable=False, default=1)
+    webhook_token = Column(String(64), nullable=False, unique=True)
+    webhook_ids_json = Column(Text, nullable=False, default='{}')
+    auto_ack_enabled = Column(Boolean, nullable=False, default=False)
+    auto_ack_text = Column(Text, nullable=False, default='미르감: 주문이 접수되었습니다.')
+    enabled = Column(Boolean, nullable=False, default=True)
+    created_at = Column(Text, nullable=False, default=now)
+    updated_at = Column(Text, nullable=False, default=now)
+
+
+class SmsWebhookEvent(Base):
+    __tablename__ = 'sms_webhook_events'
+    __table_args__ = (UniqueConstraint('connection_id', 'provider_event_id'),)
+    id = Column(Integer, primary_key=True)
+    connection_id = Column(Integer, ForeignKey('sms_gate_connections.id'), nullable=False, index=True)
+    provider_event_id = Column(String(160), nullable=False)
+    event_type = Column(String(40), nullable=False)
+    received_at = Column(Text, nullable=False, default=now)
+
+
+class SmsInbound(Base):
+    __tablename__ = 'sms_inbound'
+    __table_args__ = (UniqueConstraint('connection_id', 'provider_event_id'),)
+    id = Column(Integer, primary_key=True)
+    account_id = Column(Integer, ForeignKey('accounts.id'), nullable=False, index=True)
+    connection_id = Column(Integer, ForeignKey('sms_gate_connections.id'), nullable=False, index=True)
+    provider_event_id = Column(String(160), nullable=False)
+    provider_message_id = Column(String(160), nullable=False, default='')
+    sender_phone = Column(Text, nullable=False, default='')
+    received_at = Column(Text, nullable=False)
+    body_ciphertext = Column(Text, nullable=False)
+    body_hash = Column(String(64), nullable=False)
+    suggested_customer_id = Column(Integer, ForeignKey('customers.id'))
+    suggested_product_id = Column(Integer, ForeignKey('products.id'))
+    suggested_quantity = Column(Text, nullable=False, default='')
+    order_day = Column(String(10), nullable=False)
+    state = Column(String(20), nullable=False, default='review')
+    order_batch_id = Column(String(64), ForeignKey('order_batches.id'), unique=True)
+    created_at = Column(Text, nullable=False, default=now)
+    reviewed_at = Column(Text)
+
+
+class SmsOutbox(Base):
+    __tablename__ = 'sms_outbox'
+    id = Column(String(64), primary_key=True)
+    account_id = Column(Integer, ForeignKey('accounts.id'), nullable=False, index=True)
+    connection_id = Column(Integer, ForeignKey('sms_gate_connections.id'), nullable=False, index=True)
+    inbound_id = Column(Integer, ForeignKey('sms_inbound.id'), nullable=False, unique=True)
+    order_batch_id = Column(String(64), ForeignKey('order_batches.id'), nullable=False)
+    recipient_phone = Column(Text, nullable=False)
+    body_ciphertext = Column(Text, nullable=False)
+    state = Column(String(20), nullable=False, default='pending')
+    attempt_count = Column(Integer, nullable=False, default=0)
+    provider_message_id = Column(String(160), unique=True)
+    last_error_code = Column(String(100))
+    created_at = Column(Text, nullable=False, default=now)
+    updated_at = Column(Text, nullable=False, default=now)

@@ -17,7 +17,7 @@
 </style>
 </head>
 <body>
-<nav class="navbar" aria-label="주요 메뉴"><a href="/contact">미르감</a><a class="active" href="/order">주문 입력하기</a><a href="/order_view">주문 내역 보기</a><a href="/customer">고객 확인 및 수정</a><a href="/mypage">상품·고객 파일 관리</a></nav>
+<nav class="navbar" aria-label="주요 메뉴"><a href="/contact">미르감</a><a class="active" href="/order">주문 입력하기</a><a href="/order_view">주문 내역 보기</a><a href="/sms-orders">문자 주문</a><a href="/customer">고객 확인 및 수정</a><a href="/mypage">상품·고객 파일 관리</a></nav>
 <main class="container">
 <h1>주문 입력하기</h1><p class="lead">고객을 선택한 뒤, 아래 목록에서 <strong>각 고객의 상품·수량·주문일을 따로</strong> 입력하세요.</p>
 {% with messages = get_flashed_messages() %}{% for message in messages %}<p class="flash">{{ message }}</p>{% endfor %}{% endwith %}
