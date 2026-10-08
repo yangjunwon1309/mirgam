@@ -1,250 +1,180 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<title>주문 관리</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>주문 입력하기 | 미르감</title>
 <style>
-body {
-    font-family: 'Helvetica Neue', Arial, sans-serif;
-    background-color: #f4f4f4;
-    margin: 0;
-    padding: 20px;
-}
-.container {
-    max-width: 800px;
-    margin: auto;
-    background-color: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
-th, td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: left;
-}
-th {
-    background-color: #4CAF50;
-    color: white;
-}
-label, select, input, button {
-    display: block;
-    width: 100%;
-    margin-top: 10px;
-}
-button {
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-button:hover {
-    background-color: #45a049;
-}
-
-.navbar {
-max-width: 800px;
-margin: auto;
-justify-content: center; /* 가운데 정렬 */
-align-items: center;
-background-color: #4CAF50; /* 메뉴바 배경색 */
-overflow: hidden;
-font-family: Arial, sans-serif;
-}
-
-.navbar a {
-    float: left;
-    display: block;
-    color: white;
-    text-align: center;
-    padding: 14px 16px;
-    text-decoration: none;
-}
-
-.navbar a:hover {
-    background-color: #45a049; /* 마우스 오버시 배경색 변경 */
-}
-
-/* 컨테이너 및 기타 스타일 */
-.container {
-    padding: 20px;
-}
-
-.inner-div {
-            background-color: #f5f5dc; /* 그레이 톤의 베이지 색 */
-            border-radius: 10px; /* 둥근 모서리 */
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* 그림자 효과 */
-            margin: 20px 0; /* 상하 여백 */
-}
-.name-box {
-    display: inline-block;
-    margin: 5px;
-    padding: 7px 10px;
-    background-color: white; /* Light grey background */
-    border: 1px solid #dcdcdc; /* Grey border */
-    border-radius: 15px; /* Rounded corners */
-    font-family: Arial, sans-serif; /* Font styling */
-}
+:root{--green:#4caf50;--dark:#3f9343;--beige:#f5f5dc;--line:#d9e3d7;--ink:#253128}*{box-sizing:border-box}body{margin:0;padding:24px 16px 40px;background:#f4f4f4;color:var(--ink);font-family:"Malgun Gothic","Apple SD Gothic Neo",Arial,sans-serif}.navbar{max-width:1120px;margin:0 auto 18px;display:flex;flex-wrap:wrap;background:var(--green);border-radius:9px;overflow:hidden}.navbar a{color:#fff;text-decoration:none;padding:13px 16px;font-size:15px}.navbar a:hover,.navbar .active{background:var(--dark)}.container{max-width:1120px;margin:auto;background:#fff;padding:28px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.1)}h1{margin:0;font-size:27px}h2{margin:0 0 8px;font-size:20px}.lead,.hint{color:#59665c;line-height:1.55}.lead{margin:8px 0 22px}.hint{margin:6px 0;font-size:14px}.flash{padding:12px 14px;border-radius:8px;background:#e9f6ea;color:#245b29}.step{margin:22px 0 10px;font-weight:bold;color:#2e7433}.search{width:100%;min-height:44px;padding:10px 12px;border:1px solid #b7c7b8;border-radius:7px;font:inherit}.search-results{display:flex;flex-wrap:wrap;gap:8px;min-height:4px;margin-top:10px}.customer-toggle{background:#fff;border:1px solid #b7c7b8;color:#253128;padding:9px 11px}.customer-toggle:hover,.customer-toggle.selected{background:var(--green);color:#fff;border-color:var(--green)}.selected-box{margin:14px 0 20px;padding:16px;background:var(--beige);border:1px solid #e4e4ca;border-radius:10px}.selection-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.count{padding:5px 9px;border-radius:14px;background:var(--green);color:#fff;font-size:14px}.chips{min-height:30px;margin-top:8px}.chip{display:inline-block;margin:0 6px 6px 0;padding:7px 10px;border:1px solid #cdd8cc;border-radius:16px;background:#fff}.empty{color:#68746a}.clear{margin-top:5px;padding:7px 10px;background:#6d7a6f;font-size:13px}.order-form{padding:20px;border:1px solid var(--line);border-radius:10px;background:#fcfffc}.preview-head{display:flex;align-items:end;justify-content:space-between;gap:10px}.preview-scroll{height:452px;overflow-y:auto;border:1px solid var(--line);border-radius:9px}table{width:100%;min-width:1290px;border-collapse:collapse}th,td{padding:9px 10px;border-bottom:1px solid #e1e8e1;text-align:left;vertical-align:top}th{position:sticky;top:0;background:var(--green);color:#fff;font-size:14px;z-index:1}tr:last-child td{border-bottom:0}.table-wrap{overflow-x:auto}label{display:block;margin-bottom:6px;font-weight:bold;font-size:14px}input,select{width:100%;min-height:38px;padding:7px 8px;border:1px solid #b7c7b8;border-radius:6px;background:#fff;font:inherit}.customer-info{min-width:145px;line-height:1.45}.customer-info small{color:#59665c}.save{width:100%;margin-top:14px;min-height:47px;font-size:16px}button{border:0;border-radius:7px;background:var(--green);color:#fff;padding:11px 15px;font:inherit;font-weight:bold;cursor:pointer}button:hover{background:var(--dark)}@media(max-width:720px){body{padding:12px}.container{padding:20px 16px}.navbar a{flex:1 1 50%;text-align:center;padding:11px 8px}.preview-scroll{height:430px}}
 </style>
-
-<script>
-let usersData = { users: {} };
-
-window.onload = function() {
-    // 사용자가 이름을 입력하면 호출되는 함수
-    document.getElementById('customer_name_input').oninput = function() {
-        var input = this.value.toLowerCase();
-        var table = document.getElementById('customers_table');
-        var tr = table.getElementsByTagName('tr');
-
-        // 모든 테이블 행을 숨김
-        for (var i = 1; i < tr.length; i++) {
-            tr[i].style.display = 'none';
-        }
-
-        // 입력된 이름과 일치하는 행만 표시
-        for (var i = 1; i < tr.length; i++) {
-            var td = tr[i].getElementsByTagName('td')[0];
-            if (td) {
-                var name = td.textContent || td.innerText;
-                if (name.toLowerCase().indexOf(input) > -1) {
-                    tr[i].style.display = '';
-                }
-            }
-        }
-    };
-};
-
-function addUser(name, phone, address) {
-    let button = document.getElementById('button_' + name);
-    if (usersData.users[name]) {
-        delete usersData.users[name];
-        button.style.backgroundColor = '#4CAF50';
-        button.textContent = '선택';
-    } else {
-        usersData.users[name] = { phone: phone, address: address };
-        button.style.backgroundColor = 'red';
-        button.textContent = '취소';
-    }
-
-    document.getElementById('selected_name').value = name;
-    document.getElementById('selected_phone').value = phone;
-    document.getElementById('selected_address').value = address;
-    document.getElementById('users').value = JSON.stringify(usersData.users);
-
-    // 선택된 값을 표시하는 div 업데이트
-    document.getElementById('user_names').textContent = JSON.stringify(Object.keys(usersData.users));
-    document.getElementById('display_name').textContent = name;
-    document.getElementById('display_phone').textContent = phone;
-    document.getElementById('display_address').textContent = address;
-    extractAndDisplayNames();
-}
-function extractAndDisplayNames() {
-    var text = document.getElementById('user_names').innerText;
-    var nameContainer = document.getElementById('name_container');
-    nameContainer.innerHTML = '';
-    // Use a regular expression to find all the names
-    var names = text.match(/"([^"]+)"/g);
-
-    if (names) {
-        names.forEach(function(name) {
-            // Remove the quotes from the name
-            var cleanName = name.replace(/"/g, '');
-
-            // Create a new span for the name and add the 'name-box' class
-            var span = document.createElement('span');
-            span.classList.add('name-box');
-            span.innerText = cleanName;
-
-            // Append the name span to the name container
-            nameContainer.appendChild(span);
-        });
-    }
-}
-
-</script>
-
+<style>
+.customer-toggle{display:flex;flex-direction:column;gap:5px;text-align:left;max-width:360px;line-height:1.5}.customer-label{font-size:15px}.customer-address{display:block;font-size:12px;font-weight:normal;color:#59665c;overflow-wrap:anywhere}.customer-toggle.selected .customer-address,.customer-toggle:hover .customer-address{color:#fff}.customer-toggle:focus-visible{outline:3px solid #253128;outline-offset:2px}.chip .customer-address{margin-top:3px}
+</style>
+<style>
+.bulk-panel{margin:0 0 20px;border:1px solid #e4e4ca;border-radius:10px;background:var(--beige)}.bulk-panel summary{padding:16px;font-weight:bold;color:#2e7433;cursor:pointer}.bulk-content{padding:0 16px 16px}.bulk-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:16px 0}.bulk-actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center}.bulk-status{margin:0;color:#245b29;font-size:14px}.bulk-status.error{color:#a42d2d}@media(max-width:720px){.bulk-grid{grid-template-columns:1fr}}
+</style>
+<style>
+.selection-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px}.customer-feedback{margin:12px 0 0;padding:10px 12px;border-radius:7px;background:#fff;color:#2e7433;font-size:14px;line-height:1.55}.customer-feedback[hidden]{display:none}.customer-feedback.error{color:#a42d2d}.new-customer-dialog{width:min(480px,calc(100% - 24px));max-height:90vh;overflow-y:auto;border:1px solid var(--line);border-radius:12px;padding:0;color:var(--ink);box-shadow:0 12px 40px rgba(0,0,0,.2)}.new-customer-dialog::backdrop{background:rgba(25,40,27,.4)}.dialog-content{padding:24px;background:#fff}.dialog-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.dialog-close{background:#edf3ec;color:#425344;padding:7px 11px;font-size:20px}.dialog-close:hover{background:#dce7db}.registration-fields{padding:16px;background:var(--beige);border:1px solid #e4e4ca;border-radius:8px;margin:16px 0}.registration-fields label:not(:first-child){margin-top:14px}.dialog-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}.dialog-cancel{background:#6d7a6f}.dialog-error{color:#a42d2d;font-size:14px;line-height:1.5}button:disabled{opacity:.6;cursor:wait}@media(max-width:720px){.selection-head{align-items:flex-start;flex-wrap:wrap}.dialog-content{padding:20px 16px}.dialog-actions button{flex:1}}
+</style>
 </head>
 <body>
-    <div class="navbar">
-        <a href="/contact">미르감</a>
-        <a href="/order_view">주문 정보 확인</a>
-        <a href="/order">주문 입력하기</a>
-        <a href="/customer">고객 확인 및 수정</a>
-        <a href="/mypage">농장 정보 변경 및 등록</a>
-    </div>
-    <br>
-    <div class="container">
-    {% with messages = get_flashed_messages() %}
-    {% if messages %}
-        {% for message in messages %}
-        <li class = "flash">{{message}}</li>
-        {% endfor %}
-    {% endif %}
-    {% endwith %}
-        <label for="customer_name_input">고객 이름 검색란</label>
-        <input type="text" id="customer_name_input" name="customer_name" autocomplete="off" style = "height: 30px;">
-
-        <div class = "inner-div" id="selected_customer_display">
-            <h3>선택목록</h3>
-            <input type="hidden" id="user_names"></input>
-            <div id="name_container"></div>
-            <br>
-            <h3>선택된 고객:</h3>
-            <p>이름: <span id="display_name"> </span></p>
-            <p>전화번호: <span id="display_phone"></span></p>
-            <p>주소: <span id="display_address"></span></p>
-
-
-    <form id="customer_form" method="post" >
-        <label >제품:</label>
-        <select name="item_name" id="item_name" style = "height: 35px;">
-            {% for item in items %}
-            <option value="{{ item['item'] }}">{{ item['item'] }}</option>
-            {% endfor %}
-        </select>
-        <label for="quantity">수량:</label>
-        <input type="number" id="quantity" name="quantity" style = "height: 35px;" required>
-        <input type="hidden" id="selected_name" name="selected_name">
-        <input type="hidden" id="selected_phone" name="selected_phone">
-        <input type="hidden" id="selected_address" name="selected_address">
-        <input type="hidden" id="users" name="users">
-        <button type="submit" style = "background-color: green;">제출</button>
-    </form>
-
-        </div>
-
-
-        <table id="customers_table">
-            <thead>
-                <tr>
-                    <th>이름</th>
-                    <th>전화번호</th>
-                    <th>주소</th>
-                    <th>   </th>
-                </tr>
-            </thead>
-            <tbody>
-            {% for customer in customers %}
-            <tr>
-                <td>{{ customer['name'] }}</td>
-                <td>{{ customer['ph'] }}</td>
-                <td>{{ customer['address'] }}</td>
-                <td><button type="button" id="button_{{ customer['name'] }}" onclick="addUser('{{ customer['name'] }}', '{{ customer['ph'] }}', '{{ customer['address'] }}')">선택</button></td>
-            </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</body>
-</html>
+<nav class="navbar" aria-label="주요 메뉴"><a href="/contact">미르감</a><a class="active" href="/order">주문 입력하기</a><a href="/order_view">주문 내역 보기</a><a href="/customer">고객 확인 및 수정</a><a href="/mypage">상품·고객 파일 관리</a></nav>
+<main class="container">
+<h1>주문 입력하기</h1><p class="lead">고객을 선택한 뒤, 아래 목록에서 <strong>각 고객의 상품·수량·주문일을 따로</strong> 입력하세요.</p>
+{% with messages = get_flashed_messages() %}{% for message in messages %}<p class="flash">{{ message }}</p>{% endfor %}{% endwith %}
+<p class="step">1. 고객 검색 및 선택</p><label for="customer_name_input">고객 이름</label><input class="search" type="search" id="customer_name_input" autocomplete="off" placeholder="예: 홍길동"><div id="search-results" class="search-results" aria-live="polite"></div>
+<section class="selected-box"><div class="selection-head"><h2>선택한 고객</h2><div class="selection-actions"><span id="selection-count" class="count">0명 선택</span><button id="add-customer" type="button" aria-haspopup="dialog" aria-controls="new-customer-dialog">＋ 고객 추가</button></div></div><p class="hint">검색 결과를 누르면 고객을 선택합니다. 찾는 고객이 없으면 ‘고객 추가’로 바로 등록하세요.</p><p id="customer-feedback" class="customer-feedback" role="status" aria-live="polite" hidden></p><div id="selected-customers" class="chips"><span class="empty">아직 선택한 고객이 없습니다.</span></div><button id="clear-selection" class="clear" type="button" hidden>선택 모두 취소</button></section>
+<p class="step">2. 고객별 주문 정보 입력</p>
+<details class="bulk-panel" id="bulk-panel">
+<summary>전체 주문에 한 번에 적용하기</summary>
+<div class="bulk-content">
+<p class="hint">같은 내용으로 주문할 때 사용하세요. 입력한 항목만 현재 선택된 모든 주문에 적용됩니다. 빈칸은 각 고객의 기존 값을 유지합니다.</p>
+<div class="bulk-grid">
+<div><label for="bulk-item">상품</label><select id="bulk-item" data-bulk-field="item"><option value="">기존 상품 유지</option>{% for item in items %}<option value="{{ item['item'] }}">{{ item['item'] }}</option>{% endfor %}</select></div>
+<div><label for="bulk-quantity">수량</label><input id="bulk-quantity" data-bulk-field="quantity" type="number" min="1" step="1" placeholder="예: 2"></div>
+<div><label for="bulk-date">주문일</label><input id="bulk-date" data-bulk-field="date" type="date"></div>
+<div><label for="bulk-sender-name">보내는 사람 이름 (선택)</label><input id="bulk-sender-name" data-bulk-field="sender_name" placeholder="예: 홍길동"></div>
+<div><label for="bulk-sender-ph">보내는 사람 전화번호 (선택)</label><input id="bulk-sender-ph" data-bulk-field="sender_ph" type="tel" placeholder="예: 010-1234-5678"></div>
+<div><label for="bulk-sender-address">보내는 사람 주소 (선택)</label><input id="bulk-sender-address" data-bulk-field="sender_address" placeholder="주소 입력"></div>
+</div>
+<div class="bulk-actions"><button id="apply-all-orders" type="button">선택된 모든 주문에 적용</button><p id="bulk-status" class="bulk-status" role="status" aria-live="polite"></p></div>
+<p class="hint">적용 후에도 아래 목록에서 고객별로 수정할 수 있습니다. 나중에 추가한 고객에게는 다시 적용해 주세요. 주문 저장은 아래 저장 버튼을 눌러 주세요.</p>
+</div></details>
+<form class="order-form" method="post" id="order-form"><input type="hidden" id="request-id" name="request_id" value="{{ request_id }}" data-committed="{{ 'true' if committed else 'false' }}" data-uncertain="{{ 'true' if uncertain else 'false' }}"><input type="hidden" id="orders" name="orders" value="[]">
+<section class="preview"><div class="preview-head"><div><h2>입력된 주문 내역</h2><p class="hint">8건 높이로 고정되어 있습니다. 주문이 많으면 목록 안에서 스크롤해 확인하세요.</p></div></div><div class="preview-scroll"><div class="table-wrap"><table><thead><tr><th>번호</th><th>고객</th><th>상품</th><th>수량</th><th>주문일</th><th>보내는 사람</th><th>전화번호</th><th>주소</th></tr></thead><tbody id="order-body"><tr><td class="empty" colspan="8">고객을 선택하면 고객별 주문 입력칸이 여기에 나타납니다.</td></tr></tbody></table></div></div><button class="save" id="save-orders" type="submit">입력된 주문 저장 · 위치 선택</button><p class="hint" id="save-status" role="status">저장 창에서 폴더와 파일명을 선택하세요. 기본값은 다운로드 폴더와 오늘 날짜(YYYY_MM_DD.csv)입니다. 취소하면 입력 내용이 유지됩니다.</p></section></form>
+</main>
+<dialog id="new-customer-dialog" class="new-customer-dialog" aria-labelledby="new-customer-title" aria-describedby="new-customer-description">
+<div class="dialog-content"><div class="dialog-head"><h2 id="new-customer-title">새 고객 등록</h2><button id="close-customer-dialog" class="dialog-close" type="button" aria-label="고객 등록 창 닫기">×</button></div><p id="new-customer-description" class="hint">고객 정보를 등록하면 주문 목록에 바로 선택됩니다.</p>
+<form id="new-customer-form">
+<div class="registration-fields"><label for="quick-new-name">이름</label><input id="quick-new-name" name="new_name" required autocomplete="name" placeholder="예: 홍길동"><label for="quick-new-phone">전화번호</label><input id="quick-new-phone" name="new_phone" type="tel" required autocomplete="tel" placeholder="예: 010-1234-5678"><label for="quick-new-address">주소</label><input id="quick-new-address" name="new_address" required autocomplete="street-address" placeholder="예: 서울시 강남구 테헤란로 1"></div>
+<p id="new-customer-error" class="dialog-error" role="alert" hidden></p><div class="dialog-actions"><button id="cancel-customer-dialog" class="dialog-cancel" type="button">취소</button><button id="register-customer" type="submit">등록하고 주문에 추가</button></div>
+</form></div></dialog>
+<script>
+const ITEMS={{ items|map(attribute='item')|list|tojson }},TODAY={{ today|tojson }};
+const selectedOrders={},ordersInput=document.getElementById('orders'),selectedArea=document.getElementById('selected-customers'),count=document.getElementById('selection-count'),clearButton=document.getElementById('clear-selection'),orderBody=document.getElementById('order-body'),searchInput=document.getElementById('customer_name_input'),searchResults=document.getElementById('search-results');let searchTimer;
+function escapeHtml(value){const element=document.createElement('div');element.textContent=value||'';return element.innerHTML.replace(/"/g, '&quot;')}
+function customerKey(customer){return String(customer.customer_id)}
+function selectedList(){return Object.values(selectedOrders)}
+function renderSelection(){const customers=selectedList();ordersInput.value=JSON.stringify(customers);count.textContent=`${customers.length}명 선택`;clearButton.hidden=!customers.length;selectedArea.innerHTML=customers.length?customers.map(c=>`<span class="chip">${escapeHtml(c.name)} · ${escapeHtml(c.phone)}<small class="customer-address">${escapeHtml(c.address)}</small></span>`).join(''):'<span class="empty">아직 선택한 고객이 없습니다.</span>';renderOrders()}
+function itemOptions(selected){return ITEMS.map(item=>`<option value="${escapeHtml(item)}"${item===selected?' selected':''}>${escapeHtml(item)}</option>`).join('')}
+function field(key,field,value,type='text',extra=''){return `<input type="${type}" data-key="${escapeHtml(key)}" data-field="${field}" value="${escapeHtml(value)}" ${extra}>`}
+function renderOrders(){const orders=selectedList();if(!orders.length){orderBody.innerHTML='<tr><td class="empty" colspan="8">고객을 선택하면 고객별 주문 입력칸이 여기에 나타납니다.</td></tr>';return}orderBody.innerHTML=orders.map((order,index)=>{const key=customerKey(order);return `<tr><td>${index+1}</td><td class="customer-info"><strong>${escapeHtml(order.name)}</strong><br><small>${escapeHtml(order.phone)}<br>${escapeHtml(order.address)}</small></td><td><select data-key="${escapeHtml(key)}" data-field="item">${itemOptions(order.item)}</select></td><td>${field(key,'quantity',order.quantity,'number','min="1" step="1" placeholder="예: 2"')}</td><td>${field(key,'date',order.date,'date')}</td><td>${field(key,'sender_name',order.sender_name,'text','placeholder="선택 입력"')}</td><td>${field(key,'sender_ph',order.sender_ph,'tel','placeholder="010-1234-5678"')}</td><td>${field(key,'sender_address',order.sender_address,'text','placeholder="선택 입력"')}</td></tr>`}).join('')}
+function updateOrderField(event){const target=event.target,key=target.dataset.key,fieldName=target.dataset.field;if(!key||!fieldName||!selectedOrders[key])return;selectedOrders[key][fieldName]=target.value;ordersInput.value=JSON.stringify(selectedList())}
+function applyAllOrders(){
+    const orders=selectedList(),status=document.getElementById('bulk-status');
+    function showStatus(message,error=false){status.textContent=message;status.classList.toggle('error',error)}
+    if(!orders.length){showStatus('먼저 주문할 고객을 선택해 주세요.',true);return}
+    const updates={};
+    for(const input of document.querySelectorAll('[data-bulk-field]')){
+        const value=input.value.trim();
+        if(!value)continue;
+        if(!input.checkValidity()){input.reportValidity();showStatus('입력 내용을 확인해 주세요. 수량은 1 이상의 정수로 입력하세요.',true);return}
+        updates[input.dataset.bulkField]=value;
+    }
+    if(!Object.keys(updates).length){showStatus('한 번에 적용할 항목을 먼저 입력해 주세요.',true);return}
+    orders.forEach(order=>Object.assign(order,updates));
+    renderSelection();
+    showStatus(`${orders.length}건의 주문에 적용했습니다. 아래 목록에서 확인한 후 저장해 주세요.`);
+}
+document.getElementById('apply-all-orders').addEventListener('click',applyAllOrders);
+function toggleCustomer(customer){const key=customerKey(customer);if(selectedOrders[key]){delete selectedOrders[key]}else{selectedOrders[key]={customer_id:customer.customer_id,name:customer.name,phone:customer.phone,address:customer.address,item:ITEMS[0]||'',quantity:'',date:TODAY,sender_name:'',sender_ph:'',sender_address:''}}renderSearch(searchResults._customers||[]);renderSelection()}
+function renderSearch(customers){
+    searchResults._customers=customers;
+    searchResults.innerHTML='';
+    const renderedKeys=new Set();
+    customers.forEach(customer=>{
+        const normalized={customer_id:customer.id,name:customer.name,phone:customer.ph,address:customer.address},key=customerKey(normalized);
+        if(renderedKeys.has(key))return;
+        renderedKeys.add(key);
+        const button=document.createElement('button'),selected=Boolean(selectedOrders[key]);
+        button.type='button';
+        button.className=`customer-toggle${selected?' selected':''}`;
+        button.setAttribute('aria-pressed',String(selected));
+        const label=document.createElement('span');
+        label.className='customer-label';
+        label.textContent=`${customer.name} · ${customer.ph}`;
+        const address=document.createElement('small');
+        address.className='customer-address';
+        address.textContent=customer.address||'주소 미등록';
+        button.appendChild(label);
+        button.appendChild(address);
+        button.addEventListener('click',()=>toggleCustomer(normalized));
+        searchResults.appendChild(button);
+    });
+}
+const customerFeedback=document.getElementById('customer-feedback');
+function showCustomerFeedback(message,error=false){customerFeedback.hidden=!message;customerFeedback.textContent=message;customerFeedback.classList.toggle('error',error)}
+let searchVersion=0;
+searchInput.addEventListener('input',function(){
+    clearTimeout(searchTimer);const query=this.value.trim(),version=++searchVersion;
+    if(!query){renderSearch([]);showCustomerFeedback('');return}
+    showCustomerFeedback('고객을 찾고 있습니다…');
+    searchTimer=setTimeout(async()=>{
+        try{
+            const response=await fetch(`/customers/search?q=${encodeURIComponent(query)}`);
+            if(!response.ok)throw new Error('search failed');
+            const matches=await response.json();
+            if(version!==searchVersion)return;
+            renderSearch(matches);
+            showCustomerFeedback(matches.length?'':`‘${query}’ 검색 결과가 없습니다. 위의 ‘고객 추가’ 버튼으로 새 고객을 등록하세요.`);
+        }catch(error){
+            if(version!==searchVersion)return;
+            renderSearch([]);showCustomerFeedback('고객 검색을 완료하지 못했습니다. 잠시 후 다시 검색해 주세요.',true);
+        }
+    },180);
+});
+const customerDialog=document.getElementById('new-customer-dialog'),newCustomerForm=document.getElementById('new-customer-form'),newCustomerError=document.getElementById('new-customer-error'),registerCustomerButton=document.getElementById('register-customer');
+let registeringCustomer=false;
+function openCustomerDialog(){
+    newCustomerForm.reset();document.getElementById('quick-new-name').value=searchInput.value.trim();
+    newCustomerError.hidden=true;customerDialog.showModal();
+    document.getElementById('quick-new-name').focus();
+}
+function closeCustomerDialog(){if(!registeringCustomer)customerDialog.close()}
+document.getElementById('add-customer').addEventListener('click',openCustomerDialog);
+document.getElementById('close-customer-dialog').addEventListener('click',closeCustomerDialog);
+document.getElementById('cancel-customer-dialog').addEventListener('click',closeCustomerDialog);
+customerDialog.addEventListener('cancel',event=>{if(registeringCustomer)event.preventDefault()});
+customerDialog.addEventListener('close',()=>document.getElementById('add-customer').focus());
+newCustomerForm.addEventListener('submit',async event=>{
+    event.preventDefault();if(registeringCustomer||!newCustomerForm.reportValidity())return;
+    registeringCustomer=true;registerCustomerButton.disabled=true;registerCustomerButton.textContent='등록 중…';
+    document.getElementById('cancel-customer-dialog').disabled=true;document.getElementById('close-customer-dialog').disabled=true;newCustomerError.hidden=true;
+    try{
+        const response=await fetch('/customers/new',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({new_name:document.getElementById('quick-new-name').value,new_phone:document.getElementById('quick-new-phone').value,new_address:document.getElementById('quick-new-address').value})});
+        const result=await response.json();if(!response.ok)throw Object.assign(new Error(),{userMessage:result.message||'고객 등록을 완료하지 못했습니다.'});
+        const customer=result.customer,normalized={customer_id:customer.id,name:customer.name,phone:customer.ph,address:customer.address};
+        if(!selectedOrders[customerKey(normalized)])toggleCustomer(normalized);
+        clearTimeout(searchTimer);++searchVersion;searchInput.value=customer.name;renderSearch([customer]);renderSelection();
+        showCustomerFeedback(result.created?'새 고객을 등록하고 선택했습니다. 아래에서 주문 정보를 입력하세요.':'이미 등록된 고객을 선택했습니다. 아래에서 주문 정보를 입력하세요.');
+        customerDialog.close();
+    }catch(error){newCustomerError.textContent=error.userMessage||'고객 등록을 완료하지 못했습니다. 연결 상태를 확인하고 다시 시도해 주세요.';newCustomerError.hidden=false}
+    finally{
+        registeringCustomer=false;registerCustomerButton.disabled=false;registerCustomerButton.textContent='등록하고 주문에 추가';
+        document.getElementById('cancel-customer-dialog').disabled=false;document.getElementById('close-customer-dialog').disabled=false;
+    }
+});
+orderBody.addEventListener('input',updateOrderField);orderBody.addEventListener('change',updateOrderField);
+clearButton.addEventListener('click',()=>{Object.keys(selectedOrders).forEach(key=>delete selectedOrders[key]);renderSearch(searchResults._customers||[]);renderSelection()});
+let savingOrders=false;
+document.getElementById('order-form').addEventListener('submit',event=>{
+    if(savingOrders){event.preventDefault();return}
+    const orders=selectedList();
+    if(!orders.length){event.preventDefault();alert('먼저 고객을 한 명 이상 선택해 주세요.');return}
+    const incomplete=orders.some(order=>!order.item||!order.quantity||Number(order.quantity)<=0||!order.date);
+    if(incomplete){event.preventDefault();alert('각 고객의 상품, 수량, 주문일을 모두 입력해 주세요.');return}
+    savingOrders=true;
+    document.getElementById('save-orders').disabled=true;
+    document.getElementById('save-orders').textContent='저장 위치 선택 중…';
+    document.getElementById('save-status').textContent='저장 창에서 폴더와 파일명을 선택해 주세요. 다른 창 뒤에 있으면 작업 표시줄에서 저장 창을 확인해 주세요.';
+});
+const DRAFT_ORDERS={{ draft_orders|default([])|tojson }};
+DRAFT_ORDERS.forEach(order=>{selectedOrders[customerKey(order)]=order});
+renderSelection();
+if(document.getElementById('request-id').dataset.committed==='true'||document.getElementById('request-id').dataset.uncertain==='true'){
+    const confirmed=document.getElementById('request-id').dataset.committed==='true';
+    document.getElementById('save-orders').textContent=confirmed?'저장된 주문 CSV 다시 저장':'저장 결과 확인하고 다시 저장';
+    document.getElementById('save-status').textContent=confirmed?'주문은 중앙 서버에 저장되었습니다. 다시 눌러도 주문이 추가되지 않으며 CSV만 저장합니다.':'연결이 끊겨 저장 결과를 확인하지 못했습니다. 입력값을 유지한 채 다시 누르면 중복 없이 확인·저장합니다.';
+    document.querySelectorAll('#order-body input,#order-body select,[data-bulk-field]').forEach(element=>element.disabled=true);
+    ['clear-selection','apply-all-orders','add-customer','customer_name_input'].forEach(id=>document.getElementById(id).disabled=true);
+}
+</script></body></html>

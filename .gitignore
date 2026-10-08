@@ -3,7 +3,43 @@ crud/
 app.spec
 csv_engine.py
 dist.zip
+dist/
 scrap.py
 data/
-migrations/
 env.txt
+var/
+__pycache__/
+*.pyc
+client.json
+
+# Secrets and per-machine configuration
+.env
+.env.*
+!.env.example
+
+# Local virtual environments and test/tool caches
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local databases, journals, backups, and logs
+*.db
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.db-*
+*.log
+server-backups/
+
+# Customer/order source files and imported workbooks are private migration data,
+# not application assets. Keep them out of Git even when files are nested.
+/apps/static/*.csv
+/apps/static/*.xlsx
+/apps/static/*.xls
+/apps/static/**/*.csv
+/apps/static/**/*.xlsx
+/apps/static/**/*.xls
+/apps/static/archive_before_order_new_import/

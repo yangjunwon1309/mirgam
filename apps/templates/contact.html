@@ -1,145 +1,26 @@
-
 <!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<title>고객 데이터 관리</title>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>미르감 사용 안내</title>
 <style>
-    body {
-        font-family: 'Helvetica Neue', Arial, sans-serif;
-        background-color: #f4f4f4;
-        margin: 0;
-        padding: 20px;
-    }
-    .container {
-        max-width: 800px;
-        margin: auto;
-        background-color: white;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-    }
-    th, td {
-        border: 1px solid #ddd;
-        padding: 8px;
-        text-align: left;
-    }
-    th {
-        background-color: #4CAF50;
-        color: white;
-    }
-    label, select, input, button {
-        display: block;
-        width: 100%;
-        margin-top: 10px;
-    }
-    button {
-        background-color: #4CAF50;
-        color: white;
-        padding: 10px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: background-color 0.3s;
-        width: 100%;
-    }
-    button:hover {
-        background-color: #45a049;
-    }
-
-    .navbar {
-    max-width: 800px;
-    margin: auto;
-    justify-content: center; /* 가운데 정렬 */
-    align-items: center;
-    background-color: #4CAF50; /* 메뉴바 배경색 */
-    overflow: hidden;
-    font-family: Arial, sans-serif;
-}
-
-.navbar a {
-    float: left;
-    display: block;
-    color: white;
-    text-align: center;
-    padding: 14px 16px;
-    text-decoration: none;
-}
-
-.navbar a:hover {
-    background-color: #45a049; /* 마우스 오버시 배경색 변경 */
-}
-
-/* 컨테이너 및 기타 스타일 */
-.container {
-    padding: 20px;
-}
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-    }
-    th, td {
-        border: 1px solid #ddd;
-        padding: 8px;
-        text-align: left;
-    }
-    th {
-        background-color: #4CAF50;
-        color: white;
-    }
-    .form-field {
-        margin-bottom: 15px;
-    }
-    label, input, button {
-        display: block;
-        width: 100%;
-        margin-top: 10px;
-    }
-    button {
-        background-color: #4CAF50;
-        color: white;
-        padding: 10px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: background-color 0.3s;
-    }
-    button:hover {
-        background-color: #45a049;
-    }
-</style>
-</head>
-<body>
-<div class="navbar">
-        <a href="/contact">미르감</a>
-        <a href="/order_view">주문 정보 확인</a>
-        <a href="/order">주문 입력하기</a>
-        <a href="/customer">고객 확인 및 수정</a>
-        <a href="/mypage">농장 정보 변경 및 등록</a>
-    </div>
-    <br>
-    <div class="container">
-    {% with messages = get_flashed_messages() %}
-    {% if messages %}
-        {% for message in messages %}
-        <li class = "flash">{{message}}</li>
-        {% endfor %}
-    {% endif %}
-    {% endwith %}
-    <div class="container">
-        <h2>사용 방법</h2>
-        <p> 마이페이지에서 파일 선택 버튼을 눌러 고객 엑셀파일을 올립니다</p>
-        <p>엑셀 파일 업로드에 성공했다면 고객 페이지에 업로드한 파일이 뜹니다</p>
-        <p> 주문 작성 페이지에서 고객을 검색해서 찾은 후, 선택합니다</p>
-        <p> 선택한 고객들에 대해 주문 목록을 작성합니다 </p>
-        <p> 주문 정보 확인 페이지에서 작성한 주문 정보를 확인하고 저장합니다 </p>
-    </div>
-    </div>
-</body>
-</html>
+:root{--green:#4CAF50;--dark:#3f9343;--beige:#f5f5dc;--line:#d9e3d7;--ink:#253128}*{box-sizing:border-box}body{margin:0;padding:24px 16px 40px;background:#f4f4f4;color:var(--ink);font-family:"Malgun Gothic","Apple SD Gothic Neo",Arial,sans-serif}.navbar{max-width:960px;margin:0 auto 18px;display:flex;flex-wrap:wrap;background:var(--green);border-radius:9px;overflow:hidden}.navbar a{color:#fff;text-decoration:none;padding:13px 16px;font-size:15px}.navbar a:hover,.navbar .active{background:var(--dark)}.container{max-width:960px;margin:auto;background:#fff;padding:28px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.1)}h1{margin:0;font-size:28px}.lead{margin:8px 0 26px;color:#59665c;line-height:1.65}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.step{padding:20px;border:1px solid var(--line);border-radius:10px;background:#fcfffc}.number{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;margin-bottom:12px;border-radius:50%;background:var(--green);color:#fff;font-weight:bold}.step h2{margin:0 0 8px;font-size:19px}.step p{margin:0;color:#5d665f;line-height:1.6}.notice{margin-top:22px;padding:20px;background:var(--beige);border:1px solid #e4e4ca;border-radius:10px}.notice h2{margin:0 0 8px;font-size:20px}.notice p{margin:7px 0;color:#4d5a4f;line-height:1.6}.format{display:inline-block;margin:8px 0;padding:8px 10px;border:1px solid #d9e3d7;border-radius:7px;background:#fff;font-family:Consolas,monospace;font-size:14px}.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}.button{display:inline-block;padding:12px 16px;border-radius:7px;background:var(--green);color:#fff;text-decoration:none;font-weight:bold}.button:hover{background:var(--dark)}@media(max-width:720px){body{padding:12px}.container{padding:20px 16px}.steps{grid-template-columns:1fr}.navbar a{flex:1 1 50%;text-align:center;padding:11px 8px}}
+</style></head>
+<body><nav class="navbar" aria-label="주요 메뉴"><a class="active" href="/contact">미르감</a><a href="/order">주문 입력하기</a><a href="/order_view">주문 내역 보기</a><a href="/customer">고객 확인 및 수정</a><a href="/mypage">상품·고객 파일 관리</a></nav>
+<main class="container">
+<h1>미르감 사용 안내</h1>
+<p class="lead">고객과 주문을 기록하고, 필요한 내역을 확인하거나 CSV로 저장하는 프로그램입니다. 아래 순서대로 이용하세요.</p>
+<section class="steps">
+<article class="step"><span class="number">1</span><h2>고객 준비</h2><p>‘고객 확인 및 수정’에서 고객을 직접 등록하거나, ‘상품·고객 파일 관리’에서 고객 XLSX 또는 CSV를 불러옵니다.</p></article>
+<article class="step"><span class="number">2</span><h2>주문 입력</h2><p>고객을 선택하고 각 고객의 상품, 수량, 주문일을 입력합니다. 여러 주문에 같은 내용을 적용할 수도 있습니다. 저장을 누르면 CSV를 저장할 위치와 이름을 선택합니다.</p></article>
+<article class="step"><span class="number">3</span><h2>주문 확인</h2><p>‘주문 내역 보기’에서 날짜를 선택하거나 고객 이름으로 검색합니다. 현재 조건에 맞는 주문을 CSV로 내려받을 수 있습니다.</p></article>
+</section>
+<section class="notice">
+<h2>고객 파일을 불러올 때</h2>
+<p>XLSX 또는 CSV 파일을 사용할 수 있습니다. 기본 설정은 첫 번째 줄을 제목으로 보고, CSV는 UTF-8과 쉼표를 사용합니다. 파일의 제목이 다르거나 열 순서가 달라도 미리보기에서 이름, 전화번호, 주소에 해당하는 열을 직접 고르면 됩니다.</p>
+<p>미리보기에서 추가될 고객을 확인한 뒤 반영하세요. 기존 고객은 그대로 남습니다. 이름·전화번호·주소가 모두 같은 고객은 중복으로 보고 건너뜁니다. 주문 내역도 유지됩니다.</p>
+<p class="format">name,ph,address</p>
+</section>
+<section class="notice"><h2>저장 위치와 서버</h2>
+<p>고객·상품·주문은 중앙 서버의 SQLite DB에 저장됩니다. 주문 CSV는 저장 버튼을 누른 뒤 선택한 폴더에 별도로 저장됩니다. 기존 주문을 CSV로 내려받을 때는 날짜와 이름 필터가 적용됩니다.</p>
+<p>사이트를 사용할 때는 중앙 서버와 클라이언트 프로그램이 모두 실행 중이어야 합니다. 서버에 연결되지 않으면 잠시 기다렸다가 실행 상태를 확인해 주세요.</p>
+</section>
+<div class="actions"><a class="button" href="/customer">고객 관리로 가기</a><a class="button" href="/mypage">상품·고객 파일 관리</a><a class="button" href="/order">주문 입력 시작하기</a></div>
+</main></body></html>

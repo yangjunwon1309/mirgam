@@ -1,0 +1,5 @@
+<nav aria-label="목록 페이지" style="display:flex;gap:16px;align-items:center;margin-top:18px">
+{% if page > 1 %}<a href="{{ url_for(request.endpoint, page=page-1, q=keyword, date=selected_date|default(''), sort=selected_sort|default('name')) }}">이전 페이지</a>{% endif %}
+<span>{{ page }} / {{ pages }} 페이지</span>
+{% if page < pages %}<a href="{{ url_for(request.endpoint, page=page+1, q=keyword, date=selected_date|default(''), sort=selected_sort|default('name')) }}">다음 페이지</a>{% endif %}
+</nav>
