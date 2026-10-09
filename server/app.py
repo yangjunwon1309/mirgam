@@ -25,7 +25,7 @@ from .importers import describe, mapped_rows
 from .models import (Account, AuthSession, Customer, CustomerImport, Order, OrderBatch, Product,
                      SmsGateConnection, SmsInbound, SmsOutbox, SmsWebhookEvent, now)
 from .sms_gate import (SMS_GATE_EVENTS, SmsGateError, api_call, decrypt_secret, device_identifier,
-                       encrypt_secret, json_object, maybe_order_message, message_identifier,
+                       encrypt_secret, has_order_intent, json_object, maybe_order_message, message_identifier,
                        normalize_base_url, parse_event_body, phone_digits, response_devices,
                        verify_webhook)
 
@@ -355,7 +355,7 @@ def create_app(data_dir=None, testing=False, database_url=None):
                 connection = session.get(SmsGateConnection, connection_id)
                 products = list(session.scalars(select(Product).where(Product.is_active == True)))
                 matched_product, quantity_hint = maybe_order_message(message_text, products)
-                if matched_product is None and not any(word in message_text.casefold() for word in ('[주문]', '주문', '주문해', '보내주세요', '보내 줘', '부탁해')):
+                if matched_product is None and not has_order_intent(message_text):
                     return data({'accepted': True, 'ignored': True})
                 existing_event = session.scalar(select(SmsWebhookEvent).where(
                     SmsWebhookEvent.connection_id == connection_id,

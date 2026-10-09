@@ -381,7 +381,7 @@ def create_app(api_url=None, testing=False, transport=None):
     @app.post('/upload/apply/<identifier>')
     def apply_import(identifier):
         result = central('POST', f'/customer-imports/{identifier}/apply', json={
-            'version': request.form.get('version'), 'confirm_add': request.form.get('confirm_add') == 'yes'})['data']
+            'version': request.form.get('version'), 'confirm_add': True})['data']
         flash(f"새 고객 {result['new']}명을 추가했습니다. 기존 고객과 중복된 {result['kept']}명은 건너뛰었습니다.")
         return redirect(url_for('view_customer'))
 

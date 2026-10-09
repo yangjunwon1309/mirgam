@@ -108,16 +108,71 @@ def phone_digits(value):
     return ''.join(character for character in str(value or '') if character.isdigit())
 
 
+ORDER_KEYWORDS = (
+    '주문', '쥬문', '보내', '보네', '부탁', '주세요', '주셔', '살게', '살께', '구매', '신청',
+    '추가해', '넣어주', '담아주', '챙겨주', '부쳐주', '발송', '배송해',
+)
+ORDER_FUZZY_PHRASES = (
+    '보내주세요', '보내주실래요', '부탁드립니다', '부탁드려요', '구매할게요', '신청할게요',
+    '넣어주세요', '담아주세요', '챙겨주세요', '택배보내주세요',
+)
+
+
+def _normalized_message(value):
+    return re.sub(r'[^0-9a-z가-힣]+', '', str(value or '').casefold())
+
+
+def _within_one_edit(left, right):
+    if abs(len(left) - len(right)) > 1:
+        return False
+    i = j = differences = 0
+    while i < len(left) and j < len(right):
+        if left[i] == right[j]:
+            i += 1
+            j += 1
+            continue
+        differences += 1
+        if differences > 1:
+            return False
+        if len(left) > len(right):
+            i += 1
+        elif len(right) > len(left):
+            j += 1
+        else:
+            i += 1
+            j += 1
+    if i < len(left) or j < len(right):
+        differences += 1
+    return differences <= 1
+
+
+def _contains_typo_tolerant_phrase(text, phrase):
+    phrase = _normalized_message(phrase)
+    if len(phrase) < 5:
+        return False
+    for window_size in (len(phrase) - 1, len(phrase), len(phrase) + 1):
+        for start in range(max(0, len(text) - window_size + 1)):
+            if _within_one_edit(text[start:start + window_size], phrase):
+                return True
+    return False
+
+
+def has_order_intent(body):
+    """Match common Korean order wording, spacing variants, and one-character typos."""
+    normalized = _normalized_message(body)
+    return (any(_normalized_message(word) in normalized for word in ORDER_KEYWORDS) or
+            any(_contains_typo_tolerant_phrase(normalized, phrase) for phrase in ORDER_FUZZY_PHRASES))
+
+
 def maybe_order_message(body, products):
-    """Keep only likely order texts; actual order values remain user-confirmed."""
+    """Return product/quantity suggestions for likely orders; users still confirm them."""
     text = str(body or '').strip()
     if not text or len(text) > 5000:
         return None, ''
     lowered = text.casefold()
     matched = next((product for product in products if product.item and product.item.casefold() in lowered), None)
-    explicit_order = any(word in lowered for word in ('[주문]', '주문', '주문해', '보내주세요', '보내 줘', '부탁해'))
-    # A product mention alone is too broad and could retain private conversations.
-    if not explicit_order:
+    # A known product name OR common order wording is enough to enter manual review.
+    if matched is None and not has_order_intent(text):
         return None, ''
     quantity = ''
     if matched:

@@ -1,1 +1,27 @@
-<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>연결 확인 | 미르감</title><style>body{font-family:'Malgun Gothic',sans-serif;background:#f4f4f4;color:#253128;padding:24px}main{max-width:650px;margin:60px auto;padding:28px;background:#fff;border-radius:12px}button,a{display:inline-block;background:#4caf50;color:#fff;padding:12px;border:0;border-radius:7px;text-decoration:none;font:inherit;margin:6px}p{line-height:1.7}</style></head><body><main><h1>잠시 확인이 필요합니다</h1><p role="alert">{{ message }}</p><p>중앙 서버 실행 창을 확인해 주세요. 고객·주문 CSV를 대신 수정하지 않습니다.</p><button onclick="location.reload()">다시 확인</button><a href="/login">로그인 화면</a></main></body></html>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>연결 확인 | 미르감</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;padding:24px;background:#f4f4f4;color:#253128;font-family:"Malgun Gothic","Apple SD Gothic Neo",Arial,sans-serif}
+    main{max-width:620px;margin:10vh auto;padding:30px;background:#fff;border:1px solid #e6ebe5;border-radius:14px;box-shadow:0 5px 18px #1c2e1e12}
+    h1{margin:0 0 12px;font-size:25px}p{line-height:1.7;color:#59665c}.error{padding:14px;border-radius:8px;background:#fff5e8;color:#694a08}
+    .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}a,button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border:0;border-radius:7px;background:#4caf50;color:#fff;text-decoration:none;font:inherit;font-weight:bold;cursor:pointer}
+    button{background:#6d7a6f}a:hover{background:#3f9343}button:hover{background:#59665c}
+    @media(max-width:520px){body{padding:14px}main{margin:8vh auto;padding:22px 18px}.actions>*{width:100%}}
+  </style>
+</head>
+<body>
+  <main>
+    <h1>잠시 확인이 필요합니다</h1>
+    <p class="error" role="alert">{{ message }}</p>
+    <p>연결 정보를 확인한 뒤 다시 시도해 주세요. 고객·주문 자료는 변경되지 않았습니다.</p>
+    <div class="actions">
+      <a href="/mypage">설정으로 돌아가기</a>
+      <button type="button" onclick="history.back()">이전 화면</button>
+    </div>
+  </main>
+</body>
+</html>

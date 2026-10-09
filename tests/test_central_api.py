@@ -265,6 +265,13 @@ class ClientTests(APITests):
     def test_ui_pages_cookie_and_csrf(self):
         for path in ('/order', '/order_view', '/customer', '/mypage', '/contact'):
             self.assertEqual(self.desktop.get(path).status_code, 200, path)
+        order_html = self.desktop.get('/order').get_data(as_text=True)
+        self.assertLess(order_html.index('id="selection-count"'), order_html.index('id="customer_name_input"'))
+        self.assertIn('data-remove-order', order_html)
+        customer_html = self.desktop.get('/customer').get_data(as_text=True)
+        self.assertIn('customer-actions-dialog', customer_html)
+        self.assertIn('action-orders', customer_html)
+        self.assertIn('customer-row', customer_html)
         self.assertEqual(self.desktop.post('/customers/new', json={}).status_code, 403)
         with self.desktop.session_transaction() as session:
             self.assertNotIn('token', session)

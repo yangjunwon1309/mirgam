@@ -8,7 +8,7 @@
 
 | 변수 | 값 |
 | --- | --- |
-| `MIRGAM_PUBLIC_BASE_URL` | 배포한 API의 HTTPS 기본 주소 (예: `https://mirgam-test-asia.onrender.com`) |
+| `MIRGAM_PUBLIC_BASE_URL` | 배포한 API의 HTTPS 기본 주소 (예: `https://mirgam.onrender.com`) |
 | `MIRGAM_SMS_ENCRYPTION_KEY` | 아래 명령으로 생성한 Fernet 키 |
 
 PowerShell에서 키 생성:
@@ -61,4 +61,3 @@ python scripts/run_sms_dispatcher.py
 - 현재 초안 제안은 상품명·수량의 단순 추출뿐입니다. 주문 대상 고객, 상품, 수량, 날짜를 반드시 확인하고 확정하세요. 한 문자에서 여러 상품 주문은 아직 지원하지 않습니다.
 - 앱/웹훅 연결 자격 정보와 본문은 Fernet으로 암호화합니다. 웹훅 중복은 provider event ID로 제거합니다. `sms:sent`는 휴대폰 발신 완료이며 `sms:delivered`와 같지 않습니다.
 - 현재 `sms:received`를 통해 도착한 일반 문자는 Mirgam 서버에 전달되지만, 주문 분류 조건을 통과하지 않는 본문은 SQLite에 남지 않습니다. SMS Gateway Cloud 측 전송·보관 정책은 별도로 확인하세요.
-

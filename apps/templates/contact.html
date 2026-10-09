@@ -3,12 +3,12 @@
 <style>
 :root{--green:#4CAF50;--dark:#3f9343;--beige:#f5f5dc;--line:#d9e3d7;--ink:#253128}*{box-sizing:border-box}body{margin:0;padding:24px 16px 40px;background:#f4f4f4;color:var(--ink);font-family:"Malgun Gothic","Apple SD Gothic Neo",Arial,sans-serif}.navbar{max-width:960px;margin:0 auto 18px;display:flex;flex-wrap:wrap;background:var(--green);border-radius:9px;overflow:hidden}.navbar a{color:#fff;text-decoration:none;padding:13px 16px;font-size:15px}.navbar a:hover,.navbar .active{background:var(--dark)}.container{max-width:960px;margin:auto;background:#fff;padding:28px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.1)}h1{margin:0;font-size:28px}.lead{margin:8px 0 26px;color:#59665c;line-height:1.65}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.step{padding:20px;border:1px solid var(--line);border-radius:10px;background:#fcfffc}.number{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;margin-bottom:12px;border-radius:50%;background:var(--green);color:#fff;font-weight:bold}.step h2{margin:0 0 8px;font-size:19px}.step p{margin:0;color:#5d665f;line-height:1.6}.notice{margin-top:22px;padding:20px;background:var(--beige);border:1px solid #e4e4ca;border-radius:10px}.notice h2{margin:0 0 8px;font-size:20px}.notice p{margin:7px 0;color:#4d5a4f;line-height:1.6}.format{display:inline-block;margin:8px 0;padding:8px 10px;border:1px solid #d9e3d7;border-radius:7px;background:#fff;font-family:Consolas,monospace;font-size:14px}.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}.button{display:inline-block;padding:12px 16px;border-radius:7px;background:var(--green);color:#fff;text-decoration:none;font-weight:bold}.button:hover{background:var(--dark)}@media(max-width:720px){body{padding:12px}.container{padding:20px 16px}.steps{grid-template-columns:1fr}.navbar a{flex:1 1 50%;text-align:center;padding:11px 8px}}
 </style></head>
-<body><nav class="navbar" aria-label="주요 메뉴"><a class="active" href="/contact">미르감</a><a href="/order">주문 입력하기</a><a href="/order_view">주문 내역 보기</a><a href="/sms-orders">문자 주문</a><a href="/customer">고객 확인 및 수정</a><a href="/mypage">상품·고객 파일 관리</a></nav>
+<body><nav class="navbar" aria-label="주요 메뉴"><a class="active" href="/contact">미르감</a><a href="/order">주문 입력하기</a><a href="/order_view">주문 내역 보기</a><a href="/sms-orders">문자 주문</a><a href="/customer">고객 확인 및 수정</a><a href="/mypage">농장 설정</a></nav>
 <main class="container">
 <h1>미르감 사용 안내</h1>
 <p class="lead">고객과 주문을 기록하고, 필요한 내역을 확인하거나 CSV로 저장하는 프로그램입니다. 아래 순서대로 이용하세요.</p>
 <section class="steps">
-<article class="step"><span class="number">1</span><h2>고객 준비</h2><p>‘고객 확인 및 수정’에서 고객을 직접 등록하거나, ‘상품·고객 파일 관리’에서 고객 XLSX 또는 CSV를 불러옵니다.</p></article>
+<article class="step"><span class="number">1</span><h2>고객 준비</h2><p>‘고객 확인 및 수정’에서 고객을 직접 등록하거나, ‘농장 설정’에서 고객 XLSX 또는 CSV를 불러옵니다.</p></article>
 <article class="step"><span class="number">2</span><h2>주문 입력</h2><p>고객을 선택하고 각 고객의 상품, 수량, 주문일을 입력합니다. 여러 주문에 같은 내용을 적용할 수도 있습니다. 저장을 누르면 CSV를 저장할 위치와 이름을 선택합니다.</p></article>
 <article class="step"><span class="number">3</span><h2>주문 확인</h2><p>‘주문 내역 보기’에서 날짜를 선택하거나 고객 이름으로 검색합니다. 현재 조건에 맞는 주문을 CSV로 내려받을 수 있습니다.</p></article>
 </section>
@@ -22,5 +22,5 @@
 <p>고객·상품·주문은 중앙 서버의 SQLite DB에 저장됩니다. 주문 CSV는 저장 버튼을 누른 뒤 선택한 폴더에 별도로 저장됩니다. 기존 주문을 CSV로 내려받을 때는 날짜와 이름 필터가 적용됩니다.</p>
 <p>사이트를 사용할 때는 중앙 서버와 클라이언트 프로그램이 모두 실행 중이어야 합니다. 서버에 연결되지 않으면 잠시 기다렸다가 실행 상태를 확인해 주세요.</p>
 </section>
-<div class="actions"><a class="button" href="/customer">고객 관리로 가기</a><a class="button" href="/mypage">상품·고객 파일 관리</a><a class="button" href="/order">주문 입력 시작하기</a></div>
+<div class="actions"><a class="button" href="/customer">고객 관리로 가기</a><a class="button" href="/mypage">농장 설정</a><a class="button" href="/order">주문 입력 시작하기</a></div>
 </main></body></html>

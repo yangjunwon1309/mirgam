@@ -1,27 +1,75 @@
 <!DOCTYPE html>
-<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>고객 관리 | 미르감</title>
-<style>
-:root{--green:#4caf50;--dark:#3f9343;--beige:#f5f5dc;--line:#d9e3d7;--ink:#253128}*{box-sizing:border-box}body{margin:0;padding:24px 16px 40px;background:#f4f4f4;color:var(--ink);font-family:"Malgun Gothic","Apple SD Gothic Neo",Arial,sans-serif}.navbar{max-width:1120px;margin:0 auto 18px;display:flex;flex-wrap:wrap;background:var(--green);border-radius:9px;overflow:hidden}.navbar a{color:#fff;text-decoration:none;padding:13px 16px;font-size:15px;white-space:nowrap}.navbar a:hover,.navbar .active{background:var(--dark)}.container{max-width:1120px;margin:auto;background:#fff;padding:30px;border:1px solid #edf0e9;border-radius:14px;box-shadow:0 5px 18px rgba(28,46,30,.08)}h1{margin:0;font-size:27px}h2{margin:0 0 8px;font-size:20px}.lead,.hint{color:#59665c;line-height:1.55}.lead{margin:8px 0 22px}.hint{font-size:14px}.layout{display:grid;grid-template-columns:minmax(280px,360px) minmax(0,1fr);gap:22px}.panel{padding:20px;border:1px solid #e4e4ca;border-radius:10px;background:var(--beige)}label{display:block;margin:12px 0 6px;font-weight:bold;font-size:14px}input{width:100%;min-height:42px;padding:9px 10px;border:1px solid #b7c7b8;border-radius:7px;background:#fff;font:inherit}input:focus,button:focus-visible,a:focus-visible{outline:3px solid #9aca9c;outline-offset:2px}button,.sort-button{border:0;border-radius:7px;background:var(--green);color:#fff;padding:11px 15px;font:inherit;font-weight:bold;text-decoration:none;cursor:pointer;white-space:nowrap}.sort-button{background:#6d7a6f}.sort-button.active,.sort-button:hover,button:hover{background:var(--dark)}.add{width:100%;margin-top:18px}.delete{background:#b94343}.delete:hover{background:#963535}.search{margin:0 0 12px}.sorts{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:9px}table{width:100%;min-width:900px;border-collapse:collapse}th,td{padding:12px;border-bottom:1px solid #e1e8e1;text-align:left;vertical-align:middle}th{background:var(--green);color:#fff;font-size:14px;white-space:nowrap}tr:last-child td{border-bottom:0}tbody tr:hover{background:#fbfcf8}.quantity{text-align:right;font-variant-numeric:tabular-nums}.flash{padding:12px 14px;border-radius:8px;background:#e9f6ea;color:#245b29}.customer-actions{display:flex;align-items:center;gap:8px;min-width:180px}.customer-actions form{margin:0}.customer-actions button{min-width:76px}.delete{background:#b94343}.delete:hover{background:#963535}.sort-button:hover{color:#fff}@media(max-width:760px){body{padding:12px}.container{padding:22px 16px}.layout{grid-template-columns:minmax(0,1fr)}.navbar a{flex:1 1 50%;text-align:center;padding:11px 8px}}
-</style></head>
-<body><nav class="navbar" aria-label="주요 메뉴"><a href="/contact">미르감</a><a href="/order">주문 입력하기</a><a href="/order_view">주문 내역 보기</a><a href="/sms-orders">문자 주문</a><a class="active" href="/customer">고객 확인 및 수정</a><a href="/mypage">상품·고객 파일 관리</a></nav>
-<main class="container"><h1>고객 관리</h1><p class="lead">고객을 직접 등록하고, 이름·시도 지역·누적 주문 수량 기준으로 목록을 정리해 볼 수 있습니다.</p>{% with messages = get_flashed_messages() %}{% for message in messages %}<p class="flash">{{ message }}</p>{% endfor %}{% endwith %}
-<div class="layout"><section class="panel"><h2>새 고객 등록</h2><p class="hint">주문을 입력하기 전에 고객 정보를 등록해 두면 이름으로 바로 찾아 선택할 수 있습니다.</p><form method="post"><label for="new_name">이름</label><input id="new_name" name="new_name" required placeholder="예: 홍길동"><label for="new_phone">전화번호</label><input type="tel" id="new_phone" name="new_phone" required placeholder="예: 010-1234-5678"><label for="new_address">주소</label><input id="new_address" name="new_address" required placeholder="예: 서울시 강남구 테헤란로 1"><button class="add" type="submit">고객 등록하기</button></form></section>
-<section><h2>등록된 고객</h2><p class="hint">‘주문 수량 많은 순’은 주문 내역의 수량을 고객별로 모두 합산해 큰 순서대로 보여 줍니다.</p><div class="sorts"><a class="sort-button {% if selected_sort == 'name' %}active{% endif %}" href="/customer?sort=name">이름 가나다 순</a><a class="sort-button {% if selected_sort == 'region' %}active{% endif %}" href="/customer?sort=region">시도 지역 가나다 순</a><a class="sort-button {% if selected_sort == 'quantity' %}active{% endif %}" href="/customer?sort=quantity">주문 수량 많은 순</a></div><p class="hint">총 {{ total }}명 · <a href="/customer/export">고객 CSV 다운로드</a></p><form method="get" action="/customer"><input type="hidden" name="sort" value="{{ selected_sort }}"><label for="customer_name_input">고객 이름 검색</label><input class="search" type="search" name="q" id="customer_name_input" value="{{ keyword }}" autocomplete="off" placeholder="예: 홍길동"><button type="submit">전체 고객에서 검색</button></form><div class="table-wrap"><table id="customers_table"><thead><tr><th>이름</th><th>전화번호</th><th>시도 지역</th><th>주소</th><th>누적 주문 수량</th><th>관리</th></tr></thead><tbody>{% for customer in customers %}<tr data-name="{{ customer['name']|lower }}"><td>{{ customer['name'] }}</td><td>{{ customer['ph'] }}</td><td>{{ customer['region'] or '-' }}</td><td>{{ customer['address'] }}</td><td class="quantity">{{ customer['order_quantity']|int }}</td><td><div class="customer-actions"><button type="button" class="edit-customer" data-customer="{{ customer|tojson|forceescape }}">수정</button><form action="/customer" method="post"><input type="hidden" name="customer_id" value="{{ customer['id'] }}"><button class="delete" type="submit">삭제</button></form></div></td></tr>{% else %}<tr><td colspan="6">등록된 고객이 없습니다.</td></tr>{% endfor %}</tbody></table></div>{% include 'pagination.html' %}</section></div></main>
-<dialog id="edit-customer-dialog" style="width:min(480px,90%);border:1px solid #d9e3d7;border-radius:12px;padding:24px"><h2>고객 정보 수정</h2><p class="hint">선택한 고객만 수정합니다. 이전 주문의 이름·배송 주소는 바뀌지 않습니다.</p>
-<form action="/customer" method="post"><input type="hidden" name="action" value="edit"><input type="hidden" name="customer_id" id="edit-id">
-<label for="edit-name">이름</label><input id="edit-name" name="new_name" required>
-<label for="edit-phone">전화번호</label><input id="edit-phone" name="new_phone" type="tel" required>
-<label for="edit-address">주소</label><input id="edit-address" name="new_address" required>
-<div style="display:flex;gap:10px;margin-top:18px"><button type="button" id="cancel-edit">취소</button><button type="submit">수정 저장</button></div></form></dialog>
-<script>
-const editDialog=document.getElementById('edit-customer-dialog');
-document.querySelectorAll('.edit-customer').forEach(button=>button.addEventListener('click',()=>{
-    const customer=JSON.parse(button.dataset.customer);
-    document.getElementById('edit-id').value=customer.id;
-    document.getElementById('edit-name').value=customer.name;
-    document.getElementById('edit-phone').value=customer.ph;
-    document.getElementById('edit-address').value=customer.address;
-    editDialog.showModal();
-}));
-document.getElementById('cancel-edit').addEventListener('click',()=>editDialog.close());
-</script></body></html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>고객 관리 | 미르감</title>
+  <style>
+    :root{--green:#4caf50;--dark:#3f9343;--beige:#f5f5dc;--line:#d9e3d7;--ink:#253128}*{box-sizing:border-box}body{margin:0;padding:24px 16px 40px;background:#f4f4f4;color:var(--ink);font-family:"Malgun Gothic","Apple SD Gothic Neo",Arial,sans-serif}
+    .navbar{max-width:1200px;margin:0 auto 18px;display:flex;flex-wrap:wrap;background:var(--green);border-radius:9px;overflow:hidden}.navbar a{color:#fff;text-decoration:none;padding:13px 16px;font-size:15px;white-space:nowrap}.navbar a:hover,.navbar .active{background:var(--dark)}
+    main{max-width:1200px;margin:auto;padding:30px;background:#fff;border:1px solid #edf0e9;border-radius:14px;box-shadow:0 5px 18px #1c2e1e12}h1{margin:0;font-size:27px}h2{margin:0 0 8px;font-size:20px}.lead,.hint{color:#59665c;line-height:1.55}.lead{margin:8px 0 22px}.hint{font-size:14px}.layout{display:grid;grid-template-columns:minmax(270px,340px) minmax(0,1fr);gap:22px}.panel{padding:20px;border:1px solid #e4e4ca;border-radius:10px;background:var(--beige)}
+    label{display:block;margin:12px 0 6px;font-weight:bold;font-size:14px}input{width:100%;min-height:42px;padding:9px 10px;border:1px solid #b7c7b8;border-radius:7px;background:#fff;font:inherit}input:focus,button:focus-visible,a:focus-visible,.customer-row:focus-visible{outline:3px solid #9aca9c;outline-offset:2px}button,.sort-button{border:0;border-radius:7px;background:var(--green);color:#fff;padding:11px 15px;font:inherit;font-weight:bold;text-decoration:none;cursor:pointer;white-space:nowrap}.sort-button{background:#6d7a6f}.sort-button.active,.sort-button:hover,button:hover{background:var(--dark)}.add{width:100%;margin-top:18px}.delete{background:#b94343}.delete:hover{background:#963535}.search{margin:0 0 12px}.sorts{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.flash{padding:12px 14px;border-radius:8px;background:#e9f6ea;color:#245b29}
+    .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:9px}table{width:100%;min-width:760px;border-collapse:collapse}th,td{padding:12px;border-bottom:1px solid #e1e8e1;text-align:left;vertical-align:middle}th{background:var(--green);color:#fff;font-size:14px;white-space:nowrap}tr:last-child td{border-bottom:0}tbody tr:hover{background:#f2f8f1}.customer-row{cursor:pointer}.customer-row:focus{background:#edf7ed}.quantity{text-align:right;font-variant-numeric:tabular-nums}.empty{text-align:center;color:#68746a;padding:24px}
+    dialog{width:min(430px,calc(100% - 28px));max-width:calc(100% - 28px);border:1px solid var(--line);border-radius:12px;padding:22px;color:var(--ink);box-shadow:0 12px 40px #0003}dialog::backdrop{background:#19281b66}.dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.dialog-close{background:#6d7a6f;padding:7px 10px}.customer-detail{margin:8px 0 18px;color:#59665c;line-height:1.55;overflow-wrap:anywhere}.dialog-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.dialog-actions>*{width:100%;min-height:44px}.dialog-actions form{margin:0}.dialog-actions .orders-link{grid-column:1/-1;display:flex;align-items:center;justify-content:center;padding:10px 14px;border-radius:7px;background:#edf5ec;color:#28612e;text-decoration:none;font-weight:bold}.dialog-actions .orders-link:hover{background:#dcebd9}
+    @media(max-width:800px){body{padding:12px}main{padding:22px 16px}.layout{grid-template-columns:1fr}.navbar a{flex:1 1 50%;text-align:center;padding:11px 8px}.panel{padding:18px 15px}}
+  </style>
+</head>
+<body>
+  <nav class="navbar" aria-label="주요 메뉴"><a href="/contact">미르감</a><a href="/order">주문 입력하기</a><a href="/order_view">주문 내역 보기</a><a href="/sms-orders">문자 주문</a><a class="active" href="/customer">고객 확인 및 수정</a><a href="/mypage">농장 설정</a></nav>
+  <main>
+    <h1>고객 관리</h1><p class="lead">고객을 등록하고, 이름·지역·누적 주문 수량 순으로 찾아볼 수 있습니다. 고객을 누르면 수정·삭제·주문 조회 메뉴가 열립니다.</p>
+    {% with messages = get_flashed_messages() %}{% for message in messages %}<p class="flash">{{ message }}</p>{% endfor %}{% endwith %}
+    <div class="layout">
+      <section class="panel"><h2>새 고객 등록</h2><p class="hint">등록 후 주문 입력 화면에서 이름으로 찾아 선택할 수 있습니다.</p><form method="post"><label for="new_name">이름</label><input id="new_name" name="new_name" required placeholder="예: 홍길동"><label for="new_phone">전화번호</label><input type="tel" id="new_phone" name="new_phone" required placeholder="예: 010-1234-5678"><label for="new_address">주소</label><input id="new_address" name="new_address" required placeholder="예: 서울시 강남구 테헤란로 1"><button class="add" type="submit">고객 등록하기</button></form></section>
+      <section>
+        <h2>등록된 고객</h2><p class="hint">‘주문 수량 많은 순’은 고객별 주문 수량을 모두 합산한 순서입니다.</p>
+        <div class="sorts"><a class="sort-button {% if selected_sort == 'name' %}active{% endif %}" href="/customer?sort=name">이름 가나다 순</a><a class="sort-button {% if selected_sort == 'region' %}active{% endif %}" href="/customer?sort=region">시도 지역 가나다 순</a><a class="sort-button {% if selected_sort == 'quantity' %}active{% endif %}" href="/customer?sort=quantity">주문 수량 많은 순</a></div>
+        <p class="hint">총 {{ total }}명 · <a href="/customer/export">고객 CSV 다운로드</a></p>
+        <form method="get" action="/customer"><input type="hidden" name="sort" value="{{ selected_sort }}"><label for="customer_name_input">고객 이름 검색</label><input class="search" type="search" name="q" id="customer_name_input" value="{{ keyword }}" autocomplete="off" placeholder="예: 홍길동"><button type="submit">전체 고객에서 검색</button></form>
+        <div class="table-wrap"><table id="customers_table"><thead><tr><th>이름</th><th>전화번호</th><th>시도 지역</th><th>주소</th><th>누적 주문 수량</th></tr></thead><tbody>
+          {% for customer in customers %}<tr class="customer-row" tabindex="0" aria-haspopup="dialog" aria-label="{{ customer['name'] }} 고객 메뉴 열기" data-customer="{{ customer|tojson|forceescape }}"><td>{{ customer['name'] }}</td><td>{{ customer['ph'] }}</td><td>{{ customer['region'] or '-' }}</td><td>{{ customer['address'] }}</td><td class="quantity">{{ customer['order_quantity']|int }}</td></tr>{% else %}<tr><td class="empty" colspan="5">등록된 고객이 없습니다.</td></tr>{% endfor %}
+        </tbody></table></div>{% include 'pagination.html' %}
+      </section>
+    </div>
+  </main>
+
+  <dialog id="customer-actions-dialog" aria-labelledby="customer-action-title">
+    <div class="dialog-head"><div><h2 id="customer-action-title">고객 메뉴</h2><p id="customer-action-detail" class="customer-detail"></p></div><button type="button" class="dialog-close" id="close-customer-actions" aria-label="닫기">닫기</button></div>
+    <div class="dialog-actions"><button type="button" id="action-edit">수정하기</button><form action="/customer" method="post" id="action-delete-form"><input type="hidden" name="customer_id" id="action-delete-id"><button class="delete" type="submit">삭제하기</button></form><a class="orders-link" id="action-orders" href="/order_view">주문 내역 보기</a></div>
+  </dialog>
+
+  <dialog id="edit-customer-dialog" aria-labelledby="edit-customer-title">
+    <h2 id="edit-customer-title">고객 정보 수정</h2><p class="hint">선택한 고객만 수정합니다. 이전 주문의 이름·배송 주소는 바뀌지 않습니다.</p>
+    <form action="/customer" method="post"><input type="hidden" name="action" value="edit"><input type="hidden" name="customer_id" id="edit-id"><label for="edit-name">이름</label><input id="edit-name" name="new_name" required><label for="edit-phone">전화번호</label><input id="edit-phone" name="new_phone" type="tel" required><label for="edit-address">주소</label><input id="edit-address" name="new_address" required><div class="dialog-actions" style="margin-top:18px"><button type="button" class="dialog-close" id="cancel-edit">취소</button><button type="submit">수정 저장</button></div></form>
+  </dialog>
+  <script>
+    const actionsDialog=document.getElementById('customer-actions-dialog');
+    const editDialog=document.getElementById('edit-customer-dialog');
+    let activeCustomer=null;
+    function showCustomerActions(row){
+      activeCustomer=JSON.parse(row.dataset.customer);
+      document.getElementById('customer-action-title').textContent=activeCustomer.name;
+      document.getElementById('customer-action-detail').textContent=`${activeCustomer.ph} · ${activeCustomer.address}`;
+      document.getElementById('action-delete-id').value=activeCustomer.id;
+      document.getElementById('action-orders').href=`/order_view?q=${encodeURIComponent(activeCustomer.name)}`;
+      actionsDialog.showModal();
+    }
+    document.querySelectorAll('.customer-row').forEach(row=>{
+      row.addEventListener('click',()=>showCustomerActions(row));
+      row.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();showCustomerActions(row)}});
+    });
+    document.getElementById('close-customer-actions').addEventListener('click',()=>actionsDialog.close());
+    document.getElementById('action-delete-form').addEventListener('submit',event=>{
+      if(!confirm(`${activeCustomer?.name||'선택한 고객'} 고객을 삭제할까요? 기존 주문 내역은 유지됩니다.`))event.preventDefault();
+    });
+    document.getElementById('action-edit').addEventListener('click',()=>{
+      if(!activeCustomer)return;
+      document.getElementById('edit-id').value=activeCustomer.id;
+      document.getElementById('edit-name').value=activeCustomer.name;
+      document.getElementById('edit-phone').value=activeCustomer.ph;
+      document.getElementById('edit-address').value=activeCustomer.address;
+      actionsDialog.close();editDialog.showModal();
+    });
+    document.getElementById('cancel-edit').addEventListener('click',()=>editDialog.close());
+  </script>
+</body>
+</html>
