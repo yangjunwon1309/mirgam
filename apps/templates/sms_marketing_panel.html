@@ -1,0 +1,17 @@
+<section>
+  <p class="muted">판매 안내 문자를 수신 동의가 기록된 고객에게 예약 발송합니다. 휴대폰이 온라인이어야 하며, 통신사 한도에 맞는 하루 상한을 직접 설정하세요.</p>
+  {% set unknown_count = marketing_customers|selectattr('consent_unknown')|list|length %}
+  {% if unknown_count %}<details class="consent-recording"><summary>기존 고객의 수신 동의 기록 등록 (미확인 {{ unknown_count }}명)</summary><p class="campaign-hint">실제 동의 기록이 있을 때만 등록하세요. 이미 수신 거부한 고객의 상태는 바뀌지 않습니다.</p><form action="/sms-marketing/consent/all" method="post"><label for="existing-consent-date">실제 동의 날짜</label><input id="existing-consent-date" name="consent_date" type="date" value="{{ today }}" required><label class="campaign-confirm"><input type="checkbox" name="confirm_existing_consent" value="yes" required><span>미확인 고객에게 광고 문자 수신 사전 동의를 실제로 받았음을 확인합니다.</span></label><button type="submit">동의 기록 등록</button></form></details>{% endif %}
+  <form id="campaign-form" action="/sms-marketing/campaigns" method="post">
+    <label for="campaign-customer-search">받을 고객 선택</label><input id="campaign-customer-search" type="search" placeholder="고객 이름 검색">
+    <div class="campaign-toolbar"><button type="button" id="campaign-select-all">동의 고객 전체 선택</button><button type="button" class="button-muted" id="campaign-clear-all">전체 선택 해제</button><strong id="campaign-selected-count" role="status">0명 선택</strong></div>
+    <div id="campaign-customer-list" class="campaign-customer-list" aria-label="문자 발송 고객 목록">
+      {% for customer in marketing_customers %}<label class="campaign-customer" data-customer-name="{{ customer.name|lower }}"><input type="checkbox" name="customer_ids" value="{{ customer.id }}" {% if customer.consent %}checked{% else %}disabled{% endif %}><span>{{ customer.name }}<small>{{ customer.phone }} · {% if customer.consent %}수신 동의 기록됨{% elif customer.consent_unknown %}동의 미확인{% else %}수신 거부{% endif %}</small></span></label>{% else %}<p class="campaign-hint">등록된 고객이 없습니다.</p>{% endfor %}
+    </div>
+    <label for="campaign-message">보낼 내용</label><textarea id="campaign-message" name="message" rows="4" maxlength="1000" required>안녕하세요. {{ current_account }}입니다. 올시즌 감귤 판매를 시작합니다. 10kg 26,000원입니다. 매주 화·목·금 발송합니다. 감사합니다.</textarea>
+    <p class="campaign-hint">광고 표기, 농장명, 연결된 휴대폰 번호, 080 무료 수신거부 안내가 자동으로 덧붙습니다.</p>
+    <label for="campaign-optout">무료 수신거부 080 번호</label><input id="campaign-optout" name="opt_out_number" type="tel" placeholder="예: 080-000-0000" required>
+    <div class="campaign-grid"><div><label for="campaign-days">발송 기간 (일)</label><input id="campaign-days" name="duration_days" type="number" min="1" max="30" value="3" required></div><div><label for="campaign-daily-limit">하루 최대 발송 건수</label><input id="campaign-daily-limit" name="daily_limit" type="number" min="1" max="5000" value="100" required></div><div><label for="campaign-start-time">매일 발송 시작</label><input id="campaign-start-time" name="start_time" type="time" value="09:00" required></div><div><label for="campaign-end-time">매일 발송 종료</label><input id="campaign-end-time" name="end_time" type="time" value="18:00" required></div></div>
+    <label class="campaign-confirm"><input type="checkbox" name="confirm_advertising" value="yes" required><span>선택한 고객의 실제 사전 수신 동의를 확인했고, 발송 내용·요금·대상을 검토했습니다.</span></label><button type="submit">발송 일정 예약하기</button>
+  </form>
+</section>

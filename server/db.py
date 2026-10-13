@@ -9,8 +9,8 @@ from alembic.config import Config
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session
 
-SCHEMA_VERSION = '0002'
-SUPPORTED_SCHEMA_VERSIONS = {'0001', '0002'}
+SCHEMA_VERSION = '0003'
+SUPPORTED_SCHEMA_VERSIONS = {'0003'}
 
 
 class Database:

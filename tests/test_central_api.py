@@ -8,7 +8,9 @@ import sqlite3
 import tempfile
 import threading
 import unittest
+from unittest.mock import patch
 
+from cryptography.fernet import Fernet
 from openpyxl import Workbook
 from sqlalchemy import select
 from werkzeug.serving import make_server
@@ -17,7 +19,7 @@ from apps.app import create_app as create_client
 from server.app import create_app
 from server.common import ORDER_COLUMNS, csv_bytes
 from server.migrate import migrate
-from server.models import Account, Customer, Order
+from server.models import Account, Customer, Order, SmsCampaignMessage, SmsGateConnection
 
 
 def fixture(directory):
@@ -90,6 +92,56 @@ class APITests(unittest.TestCase):
         self.assertEqual(self.get('/orders').get_json()['total'], 2)
         reactivated = self.post('/customers', json={'name': 'Same', 'ph': '010-1111', 'address': 'Address A'})
         self.assertEqual(reactivated.get_json()['data']['customer']['id'], customers[0]['id'])
+
+    def test_marketing_customer_picker_accepts_large_bounded_page(self):
+        response = self.get('/sms/marketing/customers?page=1&page_size=1000')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()['page_size'], 1000)
+        self.assertEqual(response.get_json()['total'], 2)
+
+    def test_marketing_consent_records_and_preserves_opt_out(self):
+        recorded = self.post('/sms/marketing/consent/all-unknown', json={
+            'confirm_existing_consent': True, 'consent_date': '2026-10-10'})
+        self.assertEqual(recorded.status_code, 200, recorded.get_json())
+        self.assertEqual(recorded.get_json()['data']['recorded'], 2)
+        customers = self.get('/sms/marketing/customers').get_json()['data']
+        self.assertTrue(all(customer['consent'] for customer in customers))
+        customer_id = customers[0]['id']
+        self.assertEqual(self.client.patch(f'/api/v1/sms/marketing/customers/{customer_id}',
+            headers=self.headers, json={'consent': False}).status_code, 200)
+        self.post('/customers', json={'name': 'New', 'ph': '010-1234-5678', 'address': 'New address'})
+        recorded = self.post('/sms/marketing/consent/all-unknown', json={
+            'confirm_existing_consent': True, 'consent_date': '2026-10-10'})
+        self.assertEqual(recorded.get_json()['data']['recorded'], 1)
+        customers = self.get('/sms/marketing/customers').get_json()['data']
+        self.assertFalse(next(row for row in customers if row['id'] == customer_id)['consent'])
+        self.assertTrue(all(row['consent'] for row in customers if row['name'] == 'New'))
+
+    def test_campaign_creates_only_scheduled_messages_for_consented_customer(self):
+        customer = self.post('/customers', json={'name': 'Opted', 'ph': '010-1234-5678',
+                                                  'address': 'Farm'}).get_json()['data']['customer']
+        consent = self.client.patch(f"/api/v1/sms/marketing/customers/{customer['id']}",
+            headers=self.headers, json={'consent': True, 'consent_date': '2026-10-10'})
+        self.assertEqual(consent.status_code, 200)
+        with self.database.session(write=True) as session:
+            account = session.scalar(select(Account).where(Account.name == 'Farm A'))
+            session.add(SmsGateConnection(account_id=account.id, base_url='https://example.test',
+                username='test', password_ciphertext='unused', signing_key_ciphertext='unused',
+                device_id='test-device', phone_number='010-1111-2222', sim_number=1,
+                webhook_token='test-webhook-token', enabled=True))
+        with patch.dict('os.environ', {'MIRGAM_SMS_ENCRYPTION_KEY': Fernet.generate_key().decode()}):
+            response = self.post('/sms/campaigns', json={
+                'customer_ids': [customer['id']], 'message': '올해 감귤 판매를 시작합니다.',
+                'confirm_advertising': True, 'opt_out_number': '080-0000-0000',
+                'duration_days': 1, 'daily_limit': 10, 'start_time': '08:00', 'end_time': '21:00'})
+        self.assertEqual(response.status_code, 201, response.get_json())
+        self.assertEqual(response.get_json()['data']['total'], 1)
+        self.assertEqual(self.client.patch(f"/api/v1/sms/marketing/customers/{customer['id']}",
+            headers=self.headers, json={'consent': False}).status_code, 200)
+        with self.database.session() as session:
+            rows = list(session.scalars(select(SmsCampaignMessage)))
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0].state, 'cancelled')
 
     def test_customer_edit_keeps_snapshot_and_account_boundary(self):
         customer = self.get('/customers').get_json()['data'][0]
@@ -267,7 +319,17 @@ class ClientTests(APITests):
             self.assertEqual(self.desktop.get(path).status_code, 200, path)
         order_html = self.desktop.get('/order').get_data(as_text=True)
         self.assertLess(order_html.index('id="selection-count"'), order_html.index('id="customer_name_input"'))
+        self.assertNotIn('<section class="selected-box">', order_html)
+        self.assertNotIn('id="selected-customers"', order_html)
+        self.assertNotIn('selectedArea', order_html)
         self.assertIn('data-remove-order', order_html)
+        self.assertIn('id="new-customer-dialog"', order_html)
+        self.assertIn('class="save"', order_html)
+        for label in ('주문 입력', '주문 내역', '문자 주문', '고객 관리', '설정'):
+            self.assertIn(f'>{label}</a>', order_html)
+        mypage_html = self.desktop.get('/mypage').get_data(as_text=True)
+        self.assertIn('문자 설정', mypage_html)
+        self.assertIn('주소록 추가', mypage_html)
         customer_html = self.desktop.get('/customer').get_data(as_text=True)
         self.assertIn('customer-actions-dialog', customer_html)
         self.assertIn('action-orders', customer_html)
@@ -277,6 +339,44 @@ class ClientTests(APITests):
             self.assertNotIn('token', session)
             self.assertNotIn('order_path', session)
         self.assertEqual(self.desktop.get('/static/login.csv').status_code, 404)
+
+    def test_sms_page_defers_optional_panels_and_caches_first_fetch(self):
+        with self.desktop.session_transaction() as session:
+            login_state = self.ui.extensions['login_states'][session['client_id']]
+        api = login_state['api']
+        original_transport = api.transport
+        calls = []
+
+        def record_transport(method, url, **kwargs):
+            calls.append(url)
+            return original_transport(method, url, **kwargs)
+
+        api.transport = record_transport
+        response = self.desktop.get('/sms-orders')
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('id="campaign-customer-list"', response.get_data(as_text=True))
+        self.assertEqual(sum(url.endswith('/api/v1/sms/inbound') for url in calls), 1)
+        self.assertFalse(any('/api/v1/sms/outbox' in url or '/api/v1/sms/campaigns' in url or
+                             '/api/v1/sms/marketing/customers' in url for url in calls))
+
+        response = self.desktop.get('/sms-orders/panel/marketing')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('campaign-customer-list', response.get_data(as_text=True))
+        response = self.desktop.get('/sms-orders/panel/marketing')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(sum('/api/v1/sms/marketing/customers' in url for url in calls), 1)
+
+        response = self.desktop.get('/sms-orders/panel/campaigns')
+        self.assertEqual(response.status_code, 200)
+        response = self.desktop.get('/sms-orders/panel/campaigns')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(sum(url.endswith('/api/v1/sms/campaigns') for url in calls), 1)
+
+    def test_marketing_customer_picker_accepts_large_bounded_page(self):
+        response = self.get('/sms/marketing/customers?page=1&page_size=1000')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()['page_size'], 1000)
+        self.assertEqual(response.get_json()['total'], 2)
 
     def test_two_independent_clients_share_new_customer(self):
         second = create_client(self.ui.extensions['api_client'].base_url, testing=True).test_client()
@@ -348,7 +448,7 @@ class ClientTests(APITests):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(self.get('/orders').get_json()['data'][0]['name'], 'Same')
         self.desktop.post('/customer', data={'csrf_token': self.csrf(), 'customer_id': customer['id']})
-        self.assertEqual(self.get('/customers').get_json()['total'], 3)
+        self.assertEqual(self.get('/customers').get_json()['total'], 1)
         self.assertEqual(self.get('/orders').get_json()['total'], 2)
         product = self.get('/products').get_json()['data'][0]
         response = self.desktop.post('/mypage', data={'csrf_token': self.csrf(), 'product_id': product['id'], 'action': 'edit', 'price': '200'})

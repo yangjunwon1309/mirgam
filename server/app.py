@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import random
 import secrets
 import threading
 import time
@@ -23,7 +24,8 @@ from .common import (APIError, CUSTOMER_COLUMNS, ORDER_COLUMNS, csv_bytes, diges
 from .db import Database
 from .importers import describe, mapped_rows
 from .models import (Account, AuthSession, Customer, CustomerImport, Order, OrderBatch, Product,
-                     SmsGateConnection, SmsInbound, SmsOutbox, SmsWebhookEvent, now)
+                     SmsCampaign, SmsCampaignMessage, SmsGateConnection, SmsInbound, SmsOutbox,
+                     SmsWebhookEvent, now)
 from .sms_gate import (SMS_GATE_EVENTS, SmsGateError, api_call, decrypt_secret, device_identifier,
                        encrypt_secret, has_order_intent, json_object, maybe_order_message, message_identifier,
                        normalize_base_url, parse_event_body, phone_digits, response_devices,
@@ -50,8 +52,21 @@ def create_app(data_dir=None, testing=False, database_url=None):
         return value
 
     def require_sms_schema():
-        if getattr(database, 'schema_version', None) != '0002':
+        if getattr(database, 'schema_version', None) != '0003':
             raise APIError('문자 연동 DB 업그레이드가 필요합니다. 운영자에게 문의해 주세요.', 503, 'schema_upgrade_required')
+
+    def require_campaign_schema():
+        if getattr(database, 'schema_version', None) != '0003':
+            raise APIError('문자 일괄 발송 기능을 쓰려면 DB 업그레이드가 필요합니다.', 503,
+                           'campaign_schema_upgrade_required')
+
+    def cancel_pending_campaign_messages(session, account_id, customer_id, stamp):
+        pending = session.scalars(select(SmsCampaignMessage).where(
+            SmsCampaignMessage.account_id == account_id,
+            SmsCampaignMessage.customer_id == customer_id,
+            SmsCampaignMessage.state == 'pending'))
+        for row in pending:
+            row.state, row.last_error_code, row.updated_at = 'cancelled', 'customer_opted_out', stamp
 
     def sms_connection_summary(connection):
         if connection is None:
@@ -78,16 +93,18 @@ def create_app(data_dir=None, testing=False, database_url=None):
 
     def customer_record(customer, quantity=0):
         return dict(record(customer, CUSTOMER_COLUMNS), id=customer.id,
-                    region=customer.address.strip().split(' ')[0], order_quantity=quantity)
+                    region=customer.address.strip().split(' ')[0], order_quantity=quantity,
+                    sms_marketing_consent=customer.sms_marketing_consent,
+                    sms_marketing_consent_at=customer.sms_marketing_consent_at)
 
     def order_record(order):
         return dict(record(order, ORDER_COLUMNS), id=order.id, customer_id=order.customer_id,
                     product_id=order.product_id)
 
-    def page_args():
+    def page_args(max_size=200):
         try:
             page = max(1, int(request.args.get('page', 1)))
-            size = max(1, min(200, int(request.args.get('page_size', 50))))
+            size = max(1, min(max_size, int(request.args.get('page_size', 50))))
         except ValueError:
             raise APIError('페이지 번호를 확인해 주세요.')
         return page, size
@@ -155,7 +172,7 @@ def create_app(data_dir=None, testing=False, database_url=None):
 
     @app.get('/api/v1/sms-gate/connection')
     def get_sms_connection():
-        if getattr(database, 'schema_version', None) != '0002':
+        if getattr(database, 'schema_version', None) != '0003':
             return data({'connected': False, 'schema_ready': False})
         with database.session() as session:
             connection = session.scalar(select(SmsGateConnection).where(SmsGateConnection.account_id == g.account_id))
@@ -351,6 +368,26 @@ def create_app(data_dir=None, testing=False, database_url=None):
             sender_phone = str(payload.get('sender') or payload.get('phoneNumber') or '').strip()
             if not isinstance(message_text, str) or not sender_phone:
                 return data({'accepted': True, 'ignored': True})
+            normalized_reply = re.sub(r'[^0-9a-z가-힣]+', '', message_text.casefold())
+            if normalized_reply in ('수신거부', '광고수신거부', '문자수신거부', '광고문자거부', 'stop', 'unsubscribe'):
+                with database.session(write=True) as session:
+                    duplicate = session.scalar(select(SmsWebhookEvent).where(
+                        SmsWebhookEvent.connection_id == connection_id,
+                        SmsWebhookEvent.provider_event_id == provider_event_id))
+                    if duplicate:
+                        return data({'accepted': True, 'duplicate': True})
+                    session.add(SmsWebhookEvent(connection_id=connection_id, provider_event_id=provider_event_id,
+                        event_type=event_type, received_at=stamp))
+                    customers = list(session.scalars(select(Customer).where(
+                        Customer.account_id == account_id, Customer.is_active == True)))
+                    sender_digits = phone_digits(sender_phone)
+                    for customer in customers:
+                        if phone_digits(customer.ph) == sender_digits:
+                            customer.sms_marketing_consent = False
+                            customer.sms_marketing_consent_at = datetime.now(ZoneInfo('Asia/Seoul')).date().isoformat()
+                            customer.sms_marketing_consent_source = 'sms_opt_out'
+                            cancel_pending_campaign_messages(session, account_id, customer.id, stamp)
+                return data({'accepted': True, 'opt_out': True})
             with database.session() as session:
                 connection = session.get(SmsGateConnection, connection_id)
                 products = list(session.scalars(select(Product).where(Product.is_active == True)))
@@ -409,10 +446,15 @@ def create_app(data_dir=None, testing=False, database_url=None):
             session.add(SmsWebhookEvent(connection_id=connection_id, provider_event_id=provider_event_id,
                                         event_type=event_type, received_at=stamp))
             outbox = session.scalar(select(SmsOutbox).where(SmsOutbox.provider_message_id == message_id)) if message_id else None
-            if outbox and event_type in state_by_event:
-                outbox.state = state_by_event[event_type]
-                outbox.last_error_code = str(payload.get('reason') or '')[:100] if event_type == 'sms:failed' else None
-                outbox.updated_at = stamp
+            campaign_message = None
+            if message_id and outbox is None:
+                campaign_message = session.scalar(select(SmsCampaignMessage).where(
+                    SmsCampaignMessage.provider_message_id == message_id))
+            message_row = outbox or campaign_message
+            if message_row and event_type in state_by_event:
+                message_row.state = state_by_event[event_type]
+                message_row.last_error_code = str(payload.get('reason') or '')[:100] if event_type == 'sms:failed' else None
+                message_row.updated_at = stamp
         return data({'accepted': True})
 
     @app.get('/api/v1/sms/inbound')
@@ -428,8 +470,9 @@ def create_app(data_dir=None, testing=False, database_url=None):
                 query = query.where(SmsInbound.state == requested_state)
             total = session.scalar(select(func.count()).select_from(query.order_by(None).subquery()))
             rows = list(session.scalars(query.order_by(SmsInbound.id.desc()).offset((page - 1) * size).limit(size)))
-            customers = list(session.scalars(select(Customer).where(Customer.account_id == g.account_id,
+            customers = (list(session.scalars(select(Customer).where(Customer.account_id == g.account_id,
                                                                        Customer.is_active == True)))
+                         if rows else [])
             result = []
             for inbound in rows:
                 try:
@@ -555,12 +598,234 @@ def create_app(data_dir=None, testing=False, database_url=None):
         require_sms_schema()
         page, size = page_args()
         with database.session() as session:
-            rows = list(session.scalars(select(SmsOutbox).where(SmsOutbox.account_id == g.account_id)
+            query = select(SmsOutbox).where(SmsOutbox.account_id == g.account_id)
+            total = session.scalar(select(func.count()).select_from(query.subquery()))
+            rows = list(session.scalars(query
                                         .order_by(SmsOutbox.id.desc()).offset((page - 1) * size).limit(size)))
             result = [{'id': row.id, 'recipient_phone': row.recipient_phone, 'state': row.state,
                        'attempt_count': row.attempt_count, 'last_error_code': row.last_error_code,
                        'created_at': row.created_at, 'updated_at': row.updated_at} for row in rows]
+        return data(result, total=total, page=page, page_size=size)
+
+    @app.get('/api/v1/sms/marketing/customers')
+    def sms_marketing_customers():
+        require_campaign_schema()
+        # This endpoint is used by the campaign recipient picker. A larger bounded
+        # page avoids serial cloud round-trips for farms with many customers.
+        page, size = page_args(max_size=2000)
+        keyword = request.args.get('q', '').strip()
+        with database.session() as session:
+            query = select(Customer).where(Customer.account_id == g.account_id, Customer.is_active == True)
+            if keyword:
+                query = query.where(func.lower(Customer.name).contains(keyword.lower(), autoescape=True))
+            total = session.scalar(select(func.count()).select_from(query.order_by(None).subquery()))
+            rows = list(session.scalars(query.order_by(Customer.name, Customer.id)
+                                        .offset((page - 1) * size).limit(size)))
+            result = [{'id': row.id, 'name': row.name, 'phone': row.ph,
+                       'consent': row.sms_marketing_consent is True,
+                       'consent_unknown': row.sms_marketing_consent is None}
+                      for row in rows]
+        return data(result, total=total, page=page, page_size=size)
+
+    @app.post('/api/v1/sms/marketing/consent/all-unknown')
+    def record_existing_marketing_consent():
+        require_campaign_schema()
+        values = body()
+        consent_day = values.get('consent_date')
+        if values.get('confirm_existing_consent') is not True or not isinstance(consent_day, str) or order_day(consent_day) != consent_day:
+            raise APIError('기존 고객의 실제 사전 동의와 동의 날짜를 확인해 주세요.', 422, 'consent_attestation_required')
+        if consent_day > datetime.now(ZoneInfo('Asia/Seoul')).date().isoformat():
+            raise APIError('동의 날짜는 미래일 수 없습니다.', 422, 'invalid_consent_date')
+        stamp = now()
+        with database.session(write=True) as session:
+            rows = list(session.scalars(select(Customer).where(Customer.account_id == g.account_id,
+                Customer.is_active == True, Customer.sms_marketing_consent.is_(None))))
+            for customer in rows:
+                customer.sms_marketing_consent = True
+                customer.sms_marketing_consent_at = consent_day
+                customer.sms_marketing_consent_source = 'existing_customers_attested_by_account'
+        return data({'recorded': len(rows), 'consent_date': consent_day, 'recorded_at': stamp})
+
+    @app.patch('/api/v1/sms/marketing/customers/<int:identifier>')
+    def update_marketing_consent(identifier):
+        require_campaign_schema()
+        values = body()
+        consent = values.get('consent')
+        if type(consent) is not bool:
+            raise APIError('문자 수신 동의 여부를 확인해 주세요.')
+        consent_day = values.get('consent_date', '')
+        if consent and (not isinstance(consent_day, str) or order_day(consent_day) != consent_day or
+                        consent_day > datetime.now(ZoneInfo('Asia/Seoul')).date().isoformat()):
+            raise APIError('실제 수신 동의 날짜를 입력해 주세요.')
+        with database.session(write=True) as session:
+            customer = session.scalar(select(Customer).where(Customer.id == identifier,
+                Customer.account_id == g.account_id, Customer.is_active == True))
+            if customer is None:
+                raise APIError('고객을 찾을 수 없습니다.', 404, 'not_found')
+            customer.sms_marketing_consent = consent
+            customer.sms_marketing_consent_at = consent_day if consent else now()[:10]
+            customer.sms_marketing_consent_source = 'account_recorded' if consent else 'account_opt_out'
+            if not consent:
+                cancel_pending_campaign_messages(session, g.account_id, customer.id, now())
+            result = customer_record(customer)
         return data(result)
+
+    @app.get('/api/v1/sms/campaigns')
+    def list_sms_campaigns():
+        require_campaign_schema()
+        with database.session() as session:
+            campaigns = list(session.scalars(select(SmsCampaign).where(SmsCampaign.account_id == g.account_id)
+                                              .order_by(SmsCampaign.created_at.desc()).limit(50)))
+            result = []
+            for campaign in campaigns:
+                counts = dict(session.execute(select(SmsCampaignMessage.state, func.count())
+                    .where(SmsCampaignMessage.campaign_id == campaign.id)
+                    .group_by(SmsCampaignMessage.state)).all())
+                campaign_state = campaign.state
+                if campaign_state != 'cancelled':
+                    if counts.get('pending', 0) or counts.get('sending', 0):
+                        campaign_state = 'scheduled' if campaign.starts_at > now() else 'sending'
+                    elif counts:
+                        campaign_state = 'completed'
+                result.append({'id': campaign.id, 'total': campaign.total_recipients,
+                    'duration_days': campaign.duration_days, 'daily_limit': campaign.daily_limit,
+                    'starts_at': campaign.starts_at, 'ends_at': campaign.ends_at, 'state': campaign_state,
+                    'counts': counts, 'created_at': campaign.created_at})
+        return data(result)
+
+    @app.post('/api/v1/sms/campaigns')
+    def create_sms_campaign():
+        require_campaign_schema()
+        values = body()
+        recipient_ids = values.get('customer_ids')
+        message = values.get('message')
+        opt_out_number = phone_digits(values.get('opt_out_number'))
+        if values.get('confirm_advertising') is not True:
+            raise APIError('광고 문자 내용과 수신 동의 대상 확인이 필요합니다.', 422, 'campaign_confirmation_required')
+        try:
+            duration_days = int(values.get('duration_days', 0))
+            daily_limit = int(values.get('daily_limit', 0))
+            starts = datetime.strptime(values.get('start_time', '09:00'), '%H:%M').time()
+            ends = datetime.strptime(values.get('end_time', '18:00'), '%H:%M').time()
+        except (TypeError, ValueError):
+            raise APIError('발송 기간, 하루 발송 상한, 발송 시간을 확인해 주세요.')
+        if (not isinstance(message, str) or not message.strip() or len(message) > 1000 or
+                not isinstance(recipient_ids, list) or not 1 <= len(recipient_ids) <= 5000 or
+                any(type(identifier) is not int for identifier in recipient_ids) or
+                len(set(recipient_ids)) != len(recipient_ids)):
+            raise APIError('문자 내용과 발송 대상을 확인해 주세요.')
+        if not 1 <= duration_days <= 30 or not 1 <= daily_limit <= 5000:
+            raise APIError('발송 기간은 1~30일, 하루 발송 상한은 1~5,000건으로 설정해 주세요.')
+        if starts < datetime.strptime('08:00', '%H:%M').time() or ends > datetime.strptime('21:00', '%H:%M').time() or starts >= ends:
+            raise APIError('광고 문자는 08:00~21:00 사이에 발송하도록 설정해 주세요.')
+        if not 10 <= len(opt_out_number) <= 11 or not opt_out_number.startswith('080'):
+            raise APIError('광고 문자에는 무료 수신거부 전화번호(080)를 입력해야 합니다.')
+        with database.session() as session:
+            connection = session.scalar(select(SmsGateConnection).where(
+                SmsGateConnection.account_id == g.account_id, SmsGateConnection.enabled == True))
+            if connection is None:
+                raise APIError('먼저 SMS Gateway 휴대폰을 연결해 주세요.', 409, 'sms_connection_required')
+            active_messages = session.scalar(select(func.count()).select_from(SmsCampaignMessage).where(
+                SmsCampaignMessage.account_id == g.account_id,
+                SmsCampaignMessage.state.in_(('pending', 'sending'))))
+            if active_messages:
+                raise APIError('이전 일괄 발송이 아직 진행 중입니다. 완료되거나 취소된 뒤 새 일정을 만들어 주세요.',
+                               409, 'campaign_already_active')
+            customers = list(session.scalars(select(Customer).where(Customer.account_id == g.account_id,
+                Customer.is_active == True, Customer.id.in_(recipient_ids))))
+            by_id = {customer.id: customer for customer in customers}
+            if len(by_id) != len(recipient_ids):
+                raise APIError('선택한 고객 중 사용할 수 없는 고객이 있습니다. 목록을 새로고침해 주세요.')
+            if any(customer.sms_marketing_consent is not True for customer in customers):
+                raise APIError('광고 문자 수신 동의를 확인한 고객만 대상으로 선택할 수 있습니다.', 422,
+                               'marketing_consent_required')
+            normalized = {}
+            for customer in customers:
+                digits = phone_digits(customer.ph)
+                if digits.startswith('0') and len(digits) in (10, 11):
+                    phone = '+82' + digits[1:]
+                elif 8 <= len(digits) <= 15:
+                    phone = '+' + digits
+                else:
+                    raise APIError(f'{customer.name} 고객의 전화번호 형식을 확인해 주세요.')
+                if phone in normalized:
+                    raise APIError('전화번호가 중복된 고객이 대상에 있습니다. 발송 대상에서 하나만 선택해 주세요.')
+                normalized[phone] = customer
+            total = len(customers)
+            if total > duration_days * daily_limit:
+                raise APIError(f'{total}명 발송은 현재 설정으로 기간 내 완료할 수 없습니다. 기간을 늘리거나 하루 상한을 높여 주세요.')
+            try:
+                account_name = session.get(Account, g.account_id).name
+            except AttributeError:
+                account_name = '미르감'
+            full_text = f'(광고) {account_name} {message.strip()}\n발신: {connection.phone_number}\n무료수신거부 {opt_out_number}'
+            try:
+                ciphertext = encrypt_secret(full_text)
+            except SmsGateError as error:
+                raise APIError(str(error), 503, 'sms_secret_config') from error
+
+        campaign_id, created_at = secrets.token_hex(16), now()
+        current = datetime.now(ZoneInfo('Asia/Seoul'))
+        start_day = current.date()
+        if current.time().replace(tzinfo=None) >= ends:
+            start_day += timedelta(days=1)
+        plan = []
+        pending_count = total
+        planned_days = []
+        for offset in range(duration_days):
+            day = start_day + timedelta(days=offset)
+            window_start = datetime.combine(day, starts, ZoneInfo('Asia/Seoul'))
+            window_end = datetime.combine(day, ends, ZoneInfo('Asia/Seoul'))
+            if offset == 0 and current < window_end and current > window_start:
+                window_start = max(window_start, current + timedelta(seconds=30))
+            seconds = max(0, int((window_end - window_start).total_seconds()))
+            if seconds <= 0 or pending_count <= 0:
+                continue
+            daily_count = min(daily_limit, (pending_count + (duration_days - offset) - 1) // (duration_days - offset))
+            daily_count = min(daily_count, seconds)
+            planned_days.append((window_start, seconds, daily_count))
+            pending_count -= daily_count
+        if pending_count:
+            raise APIError('발송 가능 시간과 기간이 부족합니다. 기간을 늘리거나 하루 상한을 조정해 주세요.')
+        rng = random.SystemRandom()
+        recipient_list = list(normalized.items())
+        rng.shuffle(recipient_list)
+        cursor = 0
+        scheduled = []
+        for window_start, seconds, daily_count in planned_days:
+            offsets = sorted(rng.sample(range(seconds), daily_count))
+            for schedule_offset in offsets:
+                phone, customer = recipient_list[cursor]
+                cursor += 1
+                scheduled.append(SmsCampaignMessage(id=secrets.token_hex(16), campaign_id=campaign_id,
+                    account_id=g.account_id, connection_id=connection.id, customer_id=customer.id,
+                    recipient_phone=phone, body_ciphertext=ciphertext,
+                    scheduled_at=(window_start + timedelta(seconds=schedule_offset)).astimezone(timezone.utc).isoformat(),
+                    state='pending', attempt_count=0, created_at=created_at, updated_at=created_at))
+        starts_at, ends_at = min(row.scheduled_at for row in scheduled), max(row.scheduled_at for row in scheduled)
+        with database.session(write=True) as session:
+            session.add(SmsCampaign(id=campaign_id, account_id=g.account_id, connection_id=connection.id,
+                body_ciphertext=ciphertext, total_recipients=total, duration_days=duration_days,
+                daily_limit=daily_limit, starts_at=starts_at, ends_at=ends_at, state='scheduled',
+                created_at=created_at, updated_at=created_at))
+            session.add_all(scheduled)
+        return data({'id': campaign_id, 'total': total, 'starts_at': starts_at, 'ends_at': ends_at,
+                     'duration_days': duration_days, 'daily_limit': daily_limit}), 201
+
+    @app.delete('/api/v1/sms/campaigns/<campaign_id>')
+    def cancel_sms_campaign(campaign_id):
+        require_campaign_schema()
+        stamp = now()
+        with database.session(write=True) as session:
+            campaign = session.scalar(select(SmsCampaign).where(SmsCampaign.id == campaign_id,
+                SmsCampaign.account_id == g.account_id))
+            if campaign is None:
+                raise APIError('문자 발송 일정을 찾을 수 없습니다.', 404, 'not_found')
+            for message in session.scalars(select(SmsCampaignMessage).where(
+                    SmsCampaignMessage.campaign_id == campaign.id, SmsCampaignMessage.state == 'pending')):
+                message.state, message.last_error_code, message.updated_at = 'cancelled', 'cancelled_by_user', stamp
+            campaign.state, campaign.updated_at = 'cancelled', stamp
+        return data({'cancelled': True})
 
     @app.post('/api/v1/auth/login')
     def login():
@@ -939,5 +1204,14 @@ def create_app(data_dir=None, testing=False, database_url=None):
         except OSError:
             app.logger.warning('Cancelled import temporary file cleanup deferred')
         return data({'cancelled': True})
+
+    if not testing:
+        # The deployed service uses one Gunicorn worker; keep scheduled SMS
+        # work alive in the same process so pending campaigns are not stranded.
+        from .sms_dispatcher import run as run_sms_dispatcher
+        dispatcher = threading.Thread(target=run_sms_dispatcher, args=(database,),
+                                      name='mirgam-sms-dispatcher', daemon=True)
+        dispatcher.start()
+        app.extensions['sms_dispatcher_thread'] = dispatcher
 
     return app

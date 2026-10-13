@@ -3,7 +3,7 @@ import time
 
 from sqlalchemy import select
 
-from .models import SmsGateConnection, SmsOutbox, now
+from .models import Customer, SmsCampaignMessage, SmsGateConnection, SmsOutbox, now
 from .sms_gate import SmsGateError, decrypt_secret, normalize_base_url
 
 
@@ -13,11 +13,25 @@ def process_one(database, requests_module=None):
         import requests as requests_module
 
     claimed = None
+    current = now()
     with database.session(write=True) as session:
-        row = session.scalar(select(SmsOutbox).where(SmsOutbox.state == 'pending')
-                             .order_by(SmsOutbox.created_at, SmsOutbox.id).limit(1))
+        outbox = session.scalar(select(SmsOutbox).where(SmsOutbox.state == 'pending')
+                                .order_by(SmsOutbox.created_at, SmsOutbox.id).limit(1))
+        campaign_message = session.scalar(select(SmsCampaignMessage).where(
+            SmsCampaignMessage.state == 'pending', SmsCampaignMessage.scheduled_at <= current)
+            .order_by(SmsCampaignMessage.scheduled_at, SmsCampaignMessage.id).limit(1))
+        if campaign_message and (outbox is None or campaign_message.scheduled_at <= outbox.created_at):
+            row, model = campaign_message, SmsCampaignMessage
+        else:
+            row, model = outbox, SmsOutbox
         if row is None:
             return False
+        if model is SmsCampaignMessage:
+            customer = session.scalar(select(Customer).where(
+                Customer.id == row.customer_id, Customer.account_id == row.account_id))
+            if customer is None or customer.sms_marketing_consent is not True:
+                row.state, row.last_error_code, row.updated_at = 'cancelled', 'customer_opted_out', now()
+                return True
         connection = session.scalar(select(SmsGateConnection).where(
             SmsGateConnection.id == row.connection_id,
             SmsGateConnection.account_id == row.account_id,
@@ -41,8 +55,9 @@ def process_one(database, requests_module=None):
             return True
         # The custom id is sent to SMS Gateway and may be echoed by a webhook
         # before the POST response is received; store it before making the call.
-        row.state, row.attempt_count, row.updated_at = 'sending', row.attempt_count + 1, now()
+        row.state, row.attempt_count, row.updated_at = 'sending', row.attempt_count + 1, current
         row.provider_message_id = row.id
+        claimed['model'] = model
 
     payload = {
         'id': claimed['id'],
@@ -70,7 +85,7 @@ def process_one(database, requests_module=None):
             state, error_code, provider_id = 'failed', f'http_{response.status_code}', None
 
     with database.session(write=True) as session:
-        row = session.get(SmsOutbox, claimed['id'])
+        row = session.get(claimed['model'], claimed['id'])
         # A status webhook may have arrived while the HTTP response was in flight.
         if row and row.state == 'sending':
             row.state, row.last_error_code, row.updated_at = state, error_code, now()

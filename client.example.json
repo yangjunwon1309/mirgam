@@ -1,3 +1,18 @@
 {
-  "api_base_url": "https://mirgam.onrender.com"
+  "MIRGAM_API_BASE_URL": "",
+  "MIRGAM_SMS_ENCRYPTION_KEY": "",
+  "api_base_url": "https://mirgam.onrender.com",
+  "default_server_id": "render",
+  "servers": [
+    {
+      "id": "render",
+      "name": "클라우드 서버 (Render)",
+      "url": "https://mirgam.onrender.com"
+    },
+    {
+      "id": "local",
+      "name": "이 PC의 로컬 서버",
+      "url": "http://127.0.0.1:5100"
+    }
+  ]
 }

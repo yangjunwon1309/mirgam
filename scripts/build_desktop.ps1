@@ -30,7 +30,9 @@ if ($LASTEXITCODE -ne 0) { throw 'Client build failed.' }
 python -m PyInstaller --noconfirm --clean --onedir --name MirgamServer `
     --distpath $releaseRoot --workpath (Join-Path $workRoot 'server') --specpath $specRoot `
     --add-data "$migrationSource;server/migrations" --copy-metadata werkzeug `
-    --hidden-import sqlalchemy.dialects.sqlite --collect-submodules alembic `
+    --copy-metadata sqlalchemy-sqlitecloud --copy-metadata sqlitecloud `
+    --hidden-import sqlalchemy.dialects.sqlite --hidden-import sqlalchemy_sqlitecloud `
+    --collect-submodules sqlalchemy_sqlitecloud --collect-submodules sqlitecloud --collect-submodules alembic `
     --exclude-module pandas --exclude-module IPython --exclude-module matplotlib `
     --exclude-module scipy --exclude-module torch server_launcher.py
 if ($LASTEXITCODE -ne 0) { throw 'Server build failed.' }

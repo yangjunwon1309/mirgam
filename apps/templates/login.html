@@ -37,6 +37,15 @@
         border-radius: 4px;
         font-size: 16px;
     }
+    .form-field select {
+        width: 100%;
+        min-height: 42px;
+        padding: 9px 10px;
+        border: 1px solid #b7c7b8;
+        border-radius: 6px;
+        background: #fff;
+        font-size: 15px;
+    }
     .login-button {
         width: 100%;
         padding: 10px;
@@ -64,6 +73,14 @@
     <div class="login-container">
         <form action="/login" method="POST" novalidate="novalidate">
             <h2> 미르감 </h2>
+            <div class="form-field">
+                <label for="server_id">접속할 서버</label>
+                <select id="server_id" name="server_id" required>
+                    {% for server in servers %}
+                    <option value="{{ server.id }}" {% if server.selected %}selected{% endif %} {% if not server.available %}disabled{% endif %}>{{ server.name }} · {{ server.status }}</option>
+                    {% endfor %}
+                </select>
+            </div>
             <div class="form-field">
                 <label for="farm-name">농장명</label>
                 <input type="text" id="farm-name" name="farm-name" required>

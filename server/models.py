@@ -29,6 +29,9 @@ class Customer(Base):
     name = Column(Text, nullable=False)
     ph = Column(Text, nullable=False)
     address = Column(Text, nullable=False)
+    sms_marketing_consent = Column(Boolean)
+    sms_marketing_consent_at = Column(Text)
+    sms_marketing_consent_source = Column(Text)
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(Text, nullable=False, default=now)
     updated_at = Column(Text, nullable=False, default=now)
@@ -168,6 +171,40 @@ class SmsOutbox(Base):
     order_batch_id = Column(String(64), ForeignKey('order_batches.id'), nullable=False)
     recipient_phone = Column(Text, nullable=False)
     body_ciphertext = Column(Text, nullable=False)
+    state = Column(String(20), nullable=False, default='pending')
+    attempt_count = Column(Integer, nullable=False, default=0)
+    provider_message_id = Column(String(160), unique=True)
+    last_error_code = Column(String(100))
+    created_at = Column(Text, nullable=False, default=now)
+    updated_at = Column(Text, nullable=False, default=now)
+
+
+class SmsCampaign(Base):
+    __tablename__ = 'sms_campaigns'
+    id = Column(String(64), primary_key=True)
+    account_id = Column(Integer, ForeignKey('accounts.id'), nullable=False, index=True)
+    connection_id = Column(Integer, ForeignKey('sms_gate_connections.id'), nullable=False, index=True)
+    body_ciphertext = Column(Text, nullable=False)
+    total_recipients = Column(Integer, nullable=False)
+    duration_days = Column(Integer, nullable=False)
+    daily_limit = Column(Integer, nullable=False)
+    starts_at = Column(Text, nullable=False)
+    ends_at = Column(Text, nullable=False)
+    state = Column(String(20), nullable=False, default='scheduled')
+    created_at = Column(Text, nullable=False, default=now)
+    updated_at = Column(Text, nullable=False, default=now)
+
+
+class SmsCampaignMessage(Base):
+    __tablename__ = 'sms_campaign_messages'
+    id = Column(String(64), primary_key=True)
+    campaign_id = Column(String(64), ForeignKey('sms_campaigns.id'), nullable=False, index=True)
+    account_id = Column(Integer, ForeignKey('accounts.id'), nullable=False, index=True)
+    connection_id = Column(Integer, ForeignKey('sms_gate_connections.id'), nullable=False, index=True)
+    customer_id = Column(Integer, ForeignKey('customers.id'), nullable=False)
+    recipient_phone = Column(Text, nullable=False)
+    body_ciphertext = Column(Text, nullable=False)
+    scheduled_at = Column(Text, nullable=False, index=True)
     state = Column(String(20), nullable=False, default='pending')
     attempt_count = Column(Integer, nullable=False, default=0)
     provider_message_id = Column(String(160), unique=True)

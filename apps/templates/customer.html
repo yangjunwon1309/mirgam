@@ -39,7 +39,7 @@
 
   <dialog id="edit-customer-dialog" aria-labelledby="edit-customer-title">
     <h2 id="edit-customer-title">고객 정보 수정</h2><p class="hint">선택한 고객만 수정합니다. 이전 주문의 이름·배송 주소는 바뀌지 않습니다.</p>
-    <form action="/customer" method="post"><input type="hidden" name="action" value="edit"><input type="hidden" name="customer_id" id="edit-id"><label for="edit-name">이름</label><input id="edit-name" name="new_name" required><label for="edit-phone">전화번호</label><input id="edit-phone" name="new_phone" type="tel" required><label for="edit-address">주소</label><input id="edit-address" name="new_address" required><div class="dialog-actions" style="margin-top:18px"><button type="button" class="dialog-close" id="cancel-edit">취소</button><button type="submit">수정 저장</button></div></form>
+    <form action="/customer" method="post"><input type="hidden" name="action" value="edit"><input type="hidden" name="customer_id" id="edit-id"><label for="edit-name">이름</label><input id="edit-name" name="new_name" required><label for="edit-phone">전화번호</label><input id="edit-phone" name="new_phone" type="tel" required><label for="edit-address">주소</label><input id="edit-address" name="new_address" required><label for="marketing-consent-action">광고성 문자 수신 동의</label><select id="marketing-consent-action" name="marketing_consent_action"><option value="keep">현재 설정 유지</option><option value="yes">동의 확인</option><option value="no">수신 거부</option></select><p id="marketing-consent-state" class="hint"></p><div id="marketing-consent-date-wrap" hidden><label for="marketing-consent-date">실제 동의 날짜</label><input type="date" id="marketing-consent-date" name="marketing_consent_date"></div><div class="dialog-actions" style="margin-top:18px"><button type="button" class="dialog-close" id="cancel-edit">취소</button><button type="submit">수정 저장</button></div></form>
   </dialog>
   <script>
     const actionsDialog=document.getElementById('customer-actions-dialog');
@@ -67,7 +67,16 @@
       document.getElementById('edit-name').value=activeCustomer.name;
       document.getElementById('edit-phone').value=activeCustomer.ph;
       document.getElementById('edit-address').value=activeCustomer.address;
+      document.getElementById('marketing-consent-action').value='keep';
+      document.getElementById('marketing-consent-state').textContent=activeCustomer.sms_marketing_consent===true?`현재 동의 기록: ${activeCustomer.sms_marketing_consent_at||'날짜 없음'}`:activeCustomer.sms_marketing_consent===false?'현재 수신 거부로 기록됨':'현재 동의 미확인';
+      document.getElementById('marketing-consent-date-wrap').hidden=true;
       actionsDialog.close();editDialog.showModal();
+    });
+    document.getElementById('marketing-consent-action').addEventListener('change',event=>{
+      const wrapper=document.getElementById('marketing-consent-date-wrap');
+      const date=document.getElementById('marketing-consent-date');
+      wrapper.hidden=event.target.value!=='yes';date.required=event.target.value==='yes';
+      if(!date.value&&date.required)date.value=new Date().toISOString().slice(0,10);
     });
     document.getElementById('cancel-edit').addEventListener('click',()=>editDialog.close());
   </script>

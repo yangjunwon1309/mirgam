@@ -1,4 +1,4 @@
-"""Apply the reviewed 0002 SMS schema migration to the configured central DB."""
+"""Apply SMS and bulk-campaign schema migrations to the configured central DB."""
 import argparse
 import os
 from pathlib import Path
@@ -21,11 +21,11 @@ def main():
     engine = create_engine(url, pool_pre_ping=True)
     with engine.connect() as connection:
         version = connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one()
-    if version == '0002':
-        print('Schema is already at 0002; no changes made.')
+    if version == '0003':
+        print('Schema is already at 0003; no changes made.')
         return
-    if version != '0001':
-        parser.error(f'Expected schema 0001, found {version!r}; refusing to migrate.')
+    if version not in ('0001', '0002'):
+        parser.error(f'Expected schema 0001 or 0002, found {version!r}; refusing to migrate.')
     if not args.yes:
         parser.error('Back up/export the cloud database first, then rerun with --yes.')
     config = Config()
@@ -34,9 +34,9 @@ def main():
     command.upgrade(config, 'head')
     with engine.connect() as connection:
         final_version = connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one()
-    if final_version != '0002':
+    if final_version != '0003':
         raise SystemExit(f'Migration finished at unexpected schema {final_version!r}.')
-    print('Central SQLite schema migrated: 0001 -> 0002. Existing data was not rewritten.')
+    print(f'Central SQLite schema migrated: {version} -> 0003. Existing customer/order data was not rewritten.')
 
 
 if __name__ == '__main__':
