@@ -14,6 +14,7 @@
     details.lazy-panel{padding:0;overflow:hidden}details.lazy-panel>summary{padding:18px;cursor:pointer;font-size:18px;font-weight:bold;color:#28612e}details.lazy-panel[open]>summary{border-bottom:1px solid var(--line);background:#fbfefb}.lazy-content{padding:0 18px 18px}.campaign-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.campaign-customer-list{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:8px;background:#fff;padding:6px}.campaign-customer{display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid #eef1ec}.campaign-customer:last-child{border-bottom:0}.campaign-customer input{width:18px;min-height:18px;flex:0 0 auto}.campaign-customer span{line-height:1.45}.campaign-customer small{display:block;color:#657167}.campaign-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:10px 0}.campaign-toolbar button{min-height:38px;padding:8px 12px}.campaign-status{margin:10px 0;padding:12px;background:#f6f8f5;border-radius:8px}.consent-recording{margin:14px 0;padding:12px;border:1px solid var(--line);border-radius:8px;background:#fff}.consent-recording summary{cursor:pointer;font-weight:bold;color:#28612e}.campaign-hint{font-size:13px;color:#657167;line-height:1.55}.campaign-confirm{display:flex;align-items:flex-start;gap:8px;margin:14px 0;font-weight:normal;line-height:1.5}.campaign-confirm input{width:18px;min-height:18px;flex:0 0 auto}.button-muted{background:#6d7a6f}.button-danger{background:#b94343}.load-more{display:block;margin:16px auto 0}.load-more[hidden]{display:none}.load-error{color:#a32626}.customer-new{display:none}
     @media(max-width:760px){body{padding:12px}.message{grid-template-columns:1fr}main{padding:20px 15px}.navbar a{flex:1 1 50%;text-align:center;padding:11px 8px}.form-grid,.campaign-grid{grid-template-columns:1fr}}
   </style>
+  <style>.campaign-customer[hidden]{display:none!important}</style>
 </head>
 <body>
 <nav class="navbar" aria-label="주요 메뉴"><a href="/contact">미르감</a><a href="/order">주문 입력</a><a href="/order_view">주문 내역</a><a class="active" href="/sms-orders">문자 주문</a><a href="/customer">고객 관리</a><a href="/mypage">설정</a></nav>
@@ -53,6 +54,38 @@ document.querySelectorAll('[data-lazy-panel]').forEach(panel=>panel.addEventList
 document.addEventListener('click',async event=>{const button=event.target.closest('.outbox-more');if(!button)return;button.disabled=true;button.textContent='불러오는 중…';const panel=button.closest('[data-lazy-panel]'),content=panel.querySelector('[data-lazy-content]');try{const response=await fetch(`/sms-orders/panel/outbox?page=${button.dataset.page}`);if(!response.ok)throw new Error(`HTTP ${response.status}`);const html=await response.text(),holder=document.createElement('div');holder.innerHTML=html;holder.querySelectorAll('[data-outbox-row]').forEach(row=>content.querySelector('#outbox-rows').append(row));const next=holder.querySelector('.outbox-more');if(next){button.dataset.page=next.dataset.page;button.disabled=false;button.textContent='발신 내역 더 보기'}else button.remove()}catch(error){button.disabled=false;button.textContent='다시 시도'}});
 function bindCampaignControls(root){const form=root.querySelector('#campaign-form');if(!form||form.dataset.bound)return;form.dataset.bound='true';const list=root.querySelector('#campaign-customer-list'),search=root.querySelector('#campaign-customer-search'),count=root.querySelector('#campaign-selected-count');const checks=[...list.querySelectorAll('input[name="customer_ids"]')];function updateCount(){count.textContent=`${checks.filter(input=>input.checked).length}명 선택`}search.addEventListener('input',()=>{const key=search.value.trim().toLocaleLowerCase();list.querySelectorAll('.campaign-customer').forEach(row=>row.hidden=!row.dataset.customerName.includes(key))});root.querySelector('#campaign-select-all').addEventListener('click',()=>{list.querySelectorAll('.campaign-customer:not([hidden]) input:not(:disabled)').forEach(input=>input.checked=true);updateCount()});root.querySelector('#campaign-clear-all').addEventListener('click',()=>{checks.forEach(input=>input.checked=false);updateCount()});checks.forEach(input=>input.addEventListener('change',updateCount));updateCount();form.addEventListener('submit',event=>{const total=checks.filter(input=>input.checked).length,days=Number(root.querySelector('#campaign-days').value),limit=Number(root.querySelector('#campaign-daily-limit').value);if(!total){event.preventDefault();alert('수신 동의가 기록된 고객 중 발송 대상을 선택해 주세요.');return}if(total>days*limit){event.preventDefault();alert(`선택한 ${total}명은 현재 설정으로 기간 안에 발송할 수 없습니다. 발송 기간을 늘리거나 하루 상한을 높여 주세요.`);return}if(!confirm(`${total}명에게 광고 문자를 ${days}일 동안 하루 최대 ${limit}건으로 나누어 예약합니다. 실제 수신 동의, 메시지 내용, 요금을 확인했나요?`))event.preventDefault()})}
 const more=document.getElementById('load-more-messages');if(more)more.addEventListener('click',async()=>{more.disabled=true;more.textContent='불러오는 중…';try{const page=Number(more.dataset.page),state=more.dataset.state,response=await fetch(`/sms-orders/messages?state=${encodeURIComponent(state)}&page=${page}`);if(!response.ok)throw new Error(`HTTP ${response.status}`);const html=await response.text();if(!html.trim()){more.hidden=true;return}document.getElementById('sms-message-list').insertAdjacentHTML('beforeend',html);bindCustomerSelects(document.getElementById('sms-message-list'));const shown=document.querySelectorAll('#sms-message-list article[data-sms-message]').length,next=Math.min(shown,{{ total }});document.getElementById('sms-message-count').textContent=`현재 ${next}건 표시 · 전체 {{ total }}건`;more.dataset.page=String(page+1);if(next>={{ total }})more.hidden=true;else more.textContent=`문자 더 불러오기 (${next}/{{ total }})`}catch(error){more.textContent='다시 시도';more.classList.add('load-error')}finally{more.disabled=false}});
+</script>
+<script>
+// Enter in the recipient-name search must filter the list, never submit the
+// campaign form (which could otherwise schedule the already checked recipients).
+document.addEventListener('keydown', event => {
+  const search = event.target.closest?.('#campaign-customer-search');
+  if (!search || event.key !== 'Enter') return;
+  event.preventDefault();
+
+  const key = search.value.trim().normalize('NFC').toLocaleLowerCase();
+  const list = search.form?.querySelector('#campaign-customer-list');
+  if (!list) return;
+  let visible = 0;
+  list.querySelectorAll('.campaign-customer').forEach(row => {
+    const name = (row.dataset.customerName || '').normalize('NFC').toLocaleLowerCase();
+    row.hidden = Boolean(key && !name.includes(key));
+    if (!row.hidden) visible += 1;
+  });
+
+  let status = search.form.querySelector('#campaign-search-status');
+  if (!status) {
+    status = document.createElement('p');
+    status.id = 'campaign-search-status';
+    status.className = 'campaign-hint';
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
+    search.insertAdjacentElement('afterend', status);
+  }
+  status.textContent = key
+    ? (visible ? `${visible}명 검색됨` : '일치하는 고객이 없습니다.')
+    : `${visible}명 전체 표시`;
+});
 </script>
 </body>
 </html>

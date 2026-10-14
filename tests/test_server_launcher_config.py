@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from server_launcher import apply_local_sms_encryption_key
+from server_launcher import apply_local_server_settings, apply_local_sms_encryption_key
 
 
 class ServerLauncherConfigTests(unittest.TestCase):
@@ -18,6 +18,24 @@ class ServerLauncherConfigTests(unittest.TestCase):
             with patch.dict(os.environ, {}, clear=True):
                 self.assertTrue(apply_local_sms_encryption_key(config_path))
                 self.assertEqual(os.environ['MIRGAM_SMS_ENCRYPTION_KEY'], 'local-test-key')
+
+    def test_loads_database_url_from_client_config(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config_path = Path(directory) / 'client.json'
+            config_path.write_text(json.dumps({'MIRGAM_DATABASE_URL': 'sqlitecloud://db.test/mirgam'}),
+                                   encoding='utf-8')
+            with patch.dict(os.environ, {}, clear=True):
+                self.assertTrue(apply_local_server_settings(config_path))
+                self.assertEqual(os.environ['MIRGAM_DATABASE_URL'], 'sqlitecloud://db.test/mirgam')
+
+    def test_environment_database_url_takes_precedence_over_client_config(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config_path = Path(directory) / 'client.json'
+            config_path.write_text(json.dumps({'MIRGAM_DATABASE_URL': 'sqlitecloud://json.test/mirgam'}),
+                                   encoding='utf-8')
+            with patch.dict(os.environ, {'MIRGAM_DATABASE_URL': 'sqlitecloud://environment.test/mirgam'}, clear=True):
+                apply_local_server_settings(config_path)
+                self.assertEqual(os.environ['MIRGAM_DATABASE_URL'], 'sqlitecloud://environment.test/mirgam')
 
     def test_environment_key_takes_precedence_over_client_config(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -35,13 +53,15 @@ class ServerLauncherConfigTests(unittest.TestCase):
             client_dir.mkdir()
             server_dir.mkdir()
             (client_dir / 'client.json').write_text(
-                json.dumps({'MIRGAM_SMS_ENCRYPTION_KEY': 'packaged-test-key'}), encoding='utf-8')
+                json.dumps({'MIRGAM_DATABASE_URL': 'sqlitecloud://db.test/mirgam',
+                            'MIRGAM_SMS_ENCRYPTION_KEY': 'packaged-test-key'}), encoding='utf-8')
             executable = server_dir / 'MirgamServer.exe'
             with patch.dict(os.environ, {}, clear=True), \
                     patch.object(sys, 'frozen', True, create=True), \
                     patch.object(sys, 'executable', str(executable)):
                 self.assertTrue(apply_local_sms_encryption_key())
                 self.assertEqual(os.environ['MIRGAM_SMS_ENCRYPTION_KEY'], 'packaged-test-key')
+                self.assertEqual(os.environ['MIRGAM_DATABASE_URL'], 'sqlitecloud://db.test/mirgam')
 
 
 if __name__ == '__main__':

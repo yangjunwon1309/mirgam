@@ -13,7 +13,7 @@ import time
 from zoneinfo import ZoneInfo
 
 from flask import Flask, Response, g, jsonify, request
-from sqlalchemy import func, select, text
+from sqlalchemy import func, select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.exc import OperationalError
 from werkzeug.exceptions import HTTPException
@@ -139,7 +139,7 @@ def create_app(data_dir=None, testing=False, database_url=None):
     @app.errorhandler(Exception)
     def internal_error(error):
         # No body, token, customer values or exception strings in logs.
-        app.logger.error('API failure: %s', type(error).__name__)
+        app.logger.error('API failure: %s on %s %s', type(error).__name__, request.method, request.path)
         return jsonify(error={'code': 'server_error', 'message': '서버에서 요청을 처리하지 못했습니다.'}), 500
 
     @app.before_request
@@ -637,14 +637,17 @@ def create_app(data_dir=None, testing=False, database_url=None):
         if consent_day > datetime.now(ZoneInfo('Asia/Seoul')).date().isoformat():
             raise APIError('동의 날짜는 미래일 수 없습니다.', 422, 'invalid_consent_date')
         stamp = now()
+        unknown_customers = (Customer.account_id == g.account_id, Customer.is_active == True,
+                             Customer.sms_marketing_consent.is_(None))
         with database.session(write=True) as session:
-            rows = list(session.scalars(select(Customer).where(Customer.account_id == g.account_id,
-                Customer.is_active == True, Customer.sms_marketing_consent.is_(None))))
-            for customer in rows:
-                customer.sms_marketing_consent = True
-                customer.sms_marketing_consent_at = consent_day
-                customer.sms_marketing_consent_source = 'existing_customers_attested_by_account'
-        return data({'recorded': len(rows), 'consent_date': consent_day, 'recorded_at': stamp})
+            count = session.scalar(select(func.count()).select_from(Customer).where(*unknown_customers)) or 0
+            result = session.execute(update(Customer).where(*unknown_customers).values(
+                sms_marketing_consent=True,
+                sms_marketing_consent_at=consent_day,
+                sms_marketing_consent_source='existing_customers_attested_by_account'),
+                execution_options={'synchronize_session': False})
+            recorded = result.rowcount if result.rowcount is not None and result.rowcount >= 0 else count
+        return data({'recorded': recorded, 'consent_date': consent_day, 'recorded_at': stamp})
 
     @app.patch('/api/v1/sms/marketing/customers/<int:identifier>')
     def update_marketing_consent(identifier):

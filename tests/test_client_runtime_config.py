@@ -30,21 +30,25 @@ class ClientRuntimeConfigTests(unittest.TestCase):
             config_path = Path(directory) / 'client.json'
             config_path.write_text(json.dumps({
                 'MIRGAM_API_BASE_URL': 'https://api.example.test',
+                'MIRGAM_DATABASE_URL': 'sqlitecloud://db.example.test/database?apikey=test-key',
                 'MIRGAM_SMS_ENCRYPTION_KEY': 'json-secret',
             }), encoding='utf-8')
             with patch.dict(os.environ, {'MIRGAM_CLIENT_CONFIG': str(config_path)}, clear=True):
                 apply_client_runtime_settings()
                 self.assertEqual(os.environ['MIRGAM_API_BASE_URL'], 'https://api.example.test')
+                self.assertEqual(os.environ['MIRGAM_DATABASE_URL'], 'sqlitecloud://db.example.test/database?apikey=test-key')
                 self.assertEqual(os.environ['MIRGAM_SMS_ENCRYPTION_KEY'], 'json-secret')
                 self.assertEqual(APIClient().base_url, 'https://api.example.test')
 
             with patch.dict(os.environ, {
                 'MIRGAM_CLIENT_CONFIG': str(config_path),
                 'MIRGAM_API_BASE_URL': 'https://environment.example.test',
+                'MIRGAM_DATABASE_URL': 'sqlitecloud://environment.example.test/database?apikey=env-key',
                 'MIRGAM_SMS_ENCRYPTION_KEY': 'environment-secret',
             }, clear=True):
                 apply_client_runtime_settings()
                 self.assertEqual(os.environ['MIRGAM_API_BASE_URL'], 'https://environment.example.test')
+                self.assertEqual(os.environ['MIRGAM_DATABASE_URL'], 'sqlitecloud://environment.example.test/database?apikey=env-key')
                 self.assertEqual(os.environ['MIRGAM_SMS_ENCRYPTION_KEY'], 'environment-secret')
 
 

@@ -31,7 +31,7 @@ def load_client_config():
 def apply_client_runtime_settings():
     """Load optional per-install settings without overriding explicit environment values."""
     config = load_client_config()
-    for key in ('MIRGAM_API_BASE_URL', 'MIRGAM_SMS_ENCRYPTION_KEY'):
+    for key in ('MIRGAM_API_BASE_URL', 'MIRGAM_DATABASE_URL', 'MIRGAM_SMS_ENCRYPTION_KEY'):
         value = config.get(key)
         if isinstance(value, str) and value.strip() and not os.environ.get(key, '').strip():
             os.environ[key] = value.strip()

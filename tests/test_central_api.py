@@ -354,14 +354,20 @@ class ClientTests(APITests):
         api.transport = record_transport
         response = self.desktop.get('/sms-orders')
         self.assertEqual(response.status_code, 200)
-        self.assertNotIn('id="campaign-customer-list"', response.get_data(as_text=True))
+        sms_html = response.get_data(as_text=True)
+        self.assertNotIn('id="campaign-customer-list"', sms_html)
+        self.assertIn("event.key !== 'Enter'", sms_html)
+        self.assertIn('event.preventDefault()', sms_html)
+        self.assertIn("row.hidden = Boolean(key && !name.includes(key))", sms_html)
+        self.assertIn('.campaign-customer[hidden]{display:none!important}', sms_html)
         self.assertEqual(sum(url.endswith('/api/v1/sms/inbound') for url in calls), 1)
         self.assertFalse(any('/api/v1/sms/outbox' in url or '/api/v1/sms/campaigns' in url or
                              '/api/v1/sms/marketing/customers' in url for url in calls))
 
         response = self.desktop.get('/sms-orders/panel/marketing')
         self.assertEqual(response.status_code, 200)
-        self.assertIn('campaign-customer-list', response.get_data(as_text=True))
+        marketing_html = response.get_data(as_text=True)
+        self.assertIn('campaign-customer-list', marketing_html)
         response = self.desktop.get('/sms-orders/panel/marketing')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(sum('/api/v1/sms/marketing/customers' in url for url in calls), 1)

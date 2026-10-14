@@ -1,8 +1,9 @@
 {
-  "MIRGAM_API_BASE_URL": "",
+  "MIRGAM_DATABASE_URL": "",
+  "MIRGAM_API_BASE_URL": "http://127.0.0.1:5100",
   "MIRGAM_SMS_ENCRYPTION_KEY": "",
-  "api_base_url": "https://mirgam.onrender.com",
-  "default_server_id": "render",
+  "api_base_url": "http://127.0.0.1:5100",
+  "default_server_id": "local",
   "servers": [
     {
       "id": "render",

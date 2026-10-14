@@ -8,11 +8,8 @@ import sys
 import time
 
 
-def apply_local_sms_encryption_key(config_path=None):
-    """Load the local server's SMS key from the shared client config as a fallback."""
-    if os.environ.get('MIRGAM_SMS_ENCRYPTION_KEY', '').strip():
-        return True
-
+def apply_local_server_settings(config_path=None):
+    """Load local server settings from client.json without overriding environment values."""
     configured_path = config_path or os.environ.get('MIRGAM_CLIENT_CONFIG', '').strip()
     if configured_path:
         candidates = [Path(configured_path)]
@@ -23,16 +20,26 @@ def apply_local_sms_encryption_key(config_path=None):
     else:
         candidates = [Path(__file__).resolve().parent / 'client.json']
 
+    loaded = False
     for path in candidates:
         try:
             config = json.loads(path.read_text(encoding='utf-8-sig'))
         except (OSError, ValueError):
             continue
-        key = config.get('MIRGAM_SMS_ENCRYPTION_KEY') if isinstance(config, dict) else None
-        if isinstance(key, str) and key.strip():
-            os.environ['MIRGAM_SMS_ENCRYPTION_KEY'] = key.strip()
-            return True
-    return False
+        if not isinstance(config, dict):
+            continue
+        for name in ('MIRGAM_DATABASE_URL', 'MIRGAM_SMS_ENCRYPTION_KEY'):
+            value = config.get(name)
+            if isinstance(value, str) and value.strip() and not os.environ.get(name, '').strip():
+                os.environ[name] = value.strip()
+                loaded = True
+    return loaded
+
+
+def apply_local_sms_encryption_key(config_path=None):
+    """Load local settings, then report whether an SMS encryption key is available."""
+    apply_local_server_settings(config_path)
+    return bool(os.environ.get('MIRGAM_SMS_ENCRYPTION_KEY', '').strip())
 
 
 def main(argv=None):
